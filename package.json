@@ -1,9 +1,9 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "5.0.4",
+  "version": "6.0.0-pre.2",
   "displayName": "Unity Cloud glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
-  "unity": "2019.4",
+  "unity": "2020.3",
   "keywords": [
     "mesh",
     "gltf",
@@ -19,19 +19,18 @@
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
     "com.unity.mathematics": "1.2.6",
-    "com.unity.burst": "1.6.6"
+    "com.unity.burst": "1.8.2"
   },
   "type": "library",
-  "unityRelease": "7f1",
   "_upm": {
-    "changelog": "### Fixed\n- Texture transform offset is calculated correctly now"
+    "changelog": "### Changed\n- Pull changes from 5.1.0"
   },
   "upmCi": {
-    "footprint": "77920330c0714308307f0fa918764beb8791701d"
+    "footprint": "ec8773ed741f74296148d53492512b2a6e954e55"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.git",
     "type": "git",
-    "revision": "705943327596fd2d46f95fea1870238fd44065b0"
+    "revision": "17397faecf346061150669fc608d8d926578aad0"
   }
 }

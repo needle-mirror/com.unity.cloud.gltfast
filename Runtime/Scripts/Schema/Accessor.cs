@@ -1,22 +1,19 @@
-// Copyright 2020-2022 Andreas Atteneder
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
+// SPDX-License-Identifier: Apache-2.0
+
+#if NEWTONSOFT_JSON && GLTFAST_USE_NEWTONSOFT_JSON
+#define JSON_NEWTONSOFT
+#else
+#define JSON_UTILITY
+#endif
 
 using System;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
+#if JSON_NEWTONSOFT
+using Newtonsoft.Json;
+#endif
 
 // GLTF_EXPORT
 using UnityEngine.Rendering;
@@ -149,6 +146,7 @@ namespace GLTFast.Schema
         /// </summary>
         public int count;
 
+#if JSON_UTILITY
         /// <summary>
         /// Specifies if the attribute is a scalar, vector, or matrix,
         /// and the number of elements in the vector or matrix.
@@ -158,6 +156,10 @@ namespace GLTFast.Schema
 
         [NonSerialized]
         GltfAccessorAttributeType m_TypeEnum = GltfAccessorAttributeType.Undefined;
+#else
+        [JsonProperty("type")]
+        public GltfAccessorAttributeType typeEnum = GltfAccessorAttributeType.Undefined;
+#endif
 
         /// <summary>
         /// <see cref="GltfAccessorAttributeType"/> typed/cached getter from the <see cref="type"/> string.
@@ -165,6 +167,7 @@ namespace GLTFast.Schema
         /// <returns>The Accessor's attribute type, if it could be retrieved correctly. <see cref="GltfAccessorAttributeType.Undefined"/> otherwise</returns>
         public GltfAccessorAttributeType GetAttributeType()
         {
+#if JSON_UTILITY
             if (m_TypeEnum != GltfAccessorAttributeType.Undefined)
                 return m_TypeEnum;
 
@@ -176,6 +179,9 @@ namespace GLTFast.Schema
             }
 
             return GltfAccessorAttributeType.Undefined;
+#else
+            return typeEnum;
+#endif
         }
 
         /// <summary>
@@ -184,8 +190,12 @@ namespace GLTFast.Schema
         /// <param name="type">Attribute type</param>
         public void SetAttributeType(GltfAccessorAttributeType type)
         {
+#if JSON_UTILITY
             m_TypeEnum = type;
             this.type = type.ToString();
+#else
+            typeEnum = type;
+#endif
         }
 
         /// <summary>
@@ -390,6 +400,17 @@ namespace GLTFast.Schema
         /// </summary>
         public bool IsSparse => sparse != null;
 
+        /// <summary>
+        /// Byte size of one element
+        /// </summary>
+        public int ElementByteSize => GetAccessorAttributeTypeLength(GetAttributeType()) * GetComponentTypeSize(componentType);
+
+        /// <summary>
+        /// Overall, byte size.
+        /// Ignores interleaved or sparse accessors
+        /// </summary>
+        public int ByteSize => ElementByteSize * count;
+
         internal void GltfSerialize(JsonWriter writer)
         {
             writer.AddObject();
@@ -399,7 +420,11 @@ namespace GLTFast.Schema
             }
             writer.AddProperty("componentType", (int)componentType);
             writer.AddProperty("count", count);
+#if JSON_UTILITY
             writer.AddProperty("type", type);
+#else
+            writer.AddProperty("type", typeEnum.ToString());
+#endif
             if (byteOffset > 0)
             {
                 writer.AddProperty("byteOffset", byteOffset);

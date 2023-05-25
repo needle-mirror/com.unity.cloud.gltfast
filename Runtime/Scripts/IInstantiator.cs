@@ -1,17 +1,5 @@
-// Copyright 2020-2022 Andreas Atteneder
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
+// SPDX-License-Identifier: Apache-2.0
 
 using Unity.Collections;
 using UnityEngine;
@@ -80,8 +68,7 @@ namespace GLTFast
         /// </summary>
         /// <param name="nodeIndex">Index of the node</param>
         /// <param name="meshName">Mesh's name</param>
-        /// <param name="mesh">The actual Mesh</param>
-        /// <param name="materialIndices">Material indices. Should be used to query the material</param>
+        /// <param name="meshResult">The converted Mesh</param>
         /// <param name="joints">If a skin was attached, the joint indices. Null otherwise</param>
         /// <param name="rootJoint">Root joint node index, if present</param>
         /// <param name="morphTargetWeights">Morph target weights, if present</param>
@@ -89,8 +76,7 @@ namespace GLTFast
         void AddPrimitive(
             uint nodeIndex,
             string meshName,
-            Mesh mesh,
-            int[] materialIndices,
+            MeshResult meshResult,
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
@@ -104,8 +90,7 @@ namespace GLTFast
         /// </summary>
         /// <param name="nodeIndex">Index of the node</param>
         /// <param name="meshName">Mesh's name</param>
-        /// <param name="mesh">The actual Mesh</param>
-        /// <param name="materialIndices">Material indices. Should be used to query the material</param>
+        /// <param name="meshResult">The converted Mesh</param>
         /// <param name="instanceCount">Number of instances</param>
         /// <param name="positions">Instance positions</param>
         /// <param name="rotations">Instance rotations</param>
@@ -114,8 +99,7 @@ namespace GLTFast
         void AddPrimitiveInstanced(
             uint nodeIndex,
             string meshName,
-            Mesh mesh,
-            int[] materialIndices,
+            MeshResult meshResult,
             uint instanceCount,
             NativeArray<Vector3>? positions,
             NativeArray<Quaternion>? rotations,
