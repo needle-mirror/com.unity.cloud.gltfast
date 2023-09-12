@@ -1,18 +1,7 @@
-// Copyright 2020-2022 Andreas Atteneder
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
+// SPDX-License-Identifier: Apache-2.0
 
+using System;
 using UnityEngine;
 
 namespace GLTFast.Export
@@ -68,6 +57,20 @@ namespace GLTFast.Export
     }
 
     /// <summary>
+    /// Compression
+    /// </summary>
+    [Flags]
+    public enum Compression
+    {
+        /// <summary>No compression</summary>
+        Uncompressed = 1,
+        /// <summary>Replace existing files with newly created ones</summary>
+        MeshOpt = 1 << 1,
+        /// <summary>Replace existing files with newly created ones</summary>
+        Draco = 1 << 2,
+    }
+
+    /// <summary>
     /// glTF export settings
     /// </summary>
     public class ExportSettings
@@ -94,5 +97,22 @@ namespace GLTFast.Export
         /// based on type.
         /// </summary>
         public ComponentType ComponentMask { get; set; } = ComponentType.All;
+
+        /// <summary>
+        /// Type of compression to apply
+        /// </summary>
+        public Compression Compression { get; set; } = Compression.Uncompressed;
+
+        /// <summary>
+        /// Draco compression export settings
+        /// </summary>
+        public DracoExportSettings DracoSettings { get; set; }
+
+        /// <summary>
+        /// If true, the export results will not differ on repeated exports. This comes at the cost of potentially
+        /// longer export times on scenes with multiple, large meshes.
+        /// This can be a requirement for certain asset pipelines or automated tests.
+        /// </summary>
+        public bool Deterministic { get; set; }
     }
 }

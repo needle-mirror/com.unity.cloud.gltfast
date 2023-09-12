@@ -1,17 +1,5 @@
-// Copyright 2020-2022 Andreas Atteneder
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
+// SPDX-License-Identifier: Apache-2.0
 
 #if DEBUG
 #define GLTFAST_REPORT
@@ -246,6 +234,10 @@ namespace GLTFast.Logging
         /// UV set index is not supported in current render pipeline
         /// </summary>
         UVMulti,
+        /// <summary>
+        /// Fallback to uncompressed meshes/bufferViews is not supported.
+        /// </summary>
+        UncompressedFallbackNotSupported,
     }
 
     /// <summary>
@@ -309,6 +301,7 @@ is approximated. Enable Opaque Texture access in Universal Render Pipeline!" },
             { LogCode.TopologyPointsMaterialUnsupported, "Could not find material that supports points topology" },
             { LogCode.TopologyUnsupported, "Unsupported topology {0}" },
             { LogCode.TypeUnsupported, "Unsupported {0} type {1}" },
+            { LogCode.UncompressedFallbackNotSupported, "Fallback to uncompressed meshes/bufferViews is not supported" },
             { LogCode.UnityWebRequestTextureNotEnabled, $"PNG/Jpeg textures load slower because built-in package \"Unity Web Request Texture\" is not enabled. {k_LinkProjectSetupTextureSupport}" },
             { LogCode.UVLimit, "Only eight UV sets will get imported" },
             { LogCode.UVMulti, "UV set index {0} is not supported in current render pipeline" },

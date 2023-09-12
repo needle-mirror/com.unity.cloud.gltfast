@@ -1,21 +1,11 @@
-// Copyright 2020-2022 Andreas Atteneder
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-#if UNITY_DOTS_HYBRID
+// SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
+// SPDX-License-Identifier: Apache-2.0
+
+#if UNITY_ENTITIES_GRAPHICS || UNITY_DOTS_HYBRID
 
 using System;
 using System.Collections.Generic;
+
 using GLTFast.Logging;
 using Unity.Collections;
 using Unity.Entities;
@@ -24,6 +14,10 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Profiling;
+#if UNITY_ENTITIES_GRAPHICS
+using Unity.Entities.Graphics;
+using UnityEngine.Rendering;
+#endif
 
 namespace GLTFast {
     public class EntityInstantiator : IInstantiator {
@@ -53,10 +47,10 @@ namespace GLTFast {
             InstantiationSettings settings = null
             )
         {
-            this.m_Gltf = gltf;
-            this.m_Parent = parent;
-            this.m_Logger = logger;
-            this.m_Settings = settings ?? new InstantiationSettings();
+            m_Gltf = gltf;
+            m_Parent = parent;
+            m_Logger = logger;
+            m_Settings = settings ?? new InstantiationSettings();
         }
 
         /// <inheritdoc />
@@ -69,34 +63,47 @@ namespace GLTFast {
             m_EntityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             m_NodeArchetype = m_EntityManager.CreateArchetype(
                 typeof(Disabled),
+#if UNITY_DOTS_HYBRID
                 typeof(Translation),
                 typeof(Rotation),
-                typeof(Parent),
                 typeof(LocalToParent),
+#else
+                typeof(LocalTransform),
+#endif
+                typeof(Parent),
                 typeof(LocalToWorld)
             );
             m_SceneArchetype = m_EntityManager.CreateArchetype(
                 typeof(Disabled),
+#if UNITY_DOTS_HYBRID
                 typeof(Translation),
                 typeof(Rotation),
                 typeof(LocalToWorld)
+#else
+                typeof(LocalTransform)
+#endif
             );
 
             if (m_Settings.SceneObjectCreation == SceneObjectCreation.Never
                 || m_Settings.SceneObjectCreation == SceneObjectCreation.WhenMultipleRootNodes && nodeIndices.Length == 1) {
-                m_SceneParent = new Parent { Value = m_Parent };
+                m_SceneParent.Value = m_Parent;
             }
             else {
                 var sceneEntity = m_EntityManager.CreateEntity(m_Parent==Entity.Null ? m_SceneArchetype : m_NodeArchetype);
+#if UNITY_DOTS_HYBRID
                 m_EntityManager.SetComponentData(sceneEntity,new Translation {Value = new float3(0,0,0)});
                 m_EntityManager.SetComponentData(sceneEntity,new Rotation {Value = quaternion.identity});
+#else
+                m_EntityManager.SetComponentData(sceneEntity,LocalTransform.Identity);
+                m_EntityManager.SetComponentData(sceneEntity, new LocalToWorld{Value = float4x4.identity});
+#endif
 #if UNITY_EDITOR
                 m_EntityManager.SetName(sceneEntity, name ?? "Scene");
 #endif
                 if (m_Parent != Entity.Null) {
                     m_EntityManager.SetComponentData(sceneEntity, new Parent { Value = m_Parent });
                 }
-                m_SceneParent = new Parent { Value = sceneEntity };
+                m_SceneParent.Value = sceneEntity;
             }
             Profiler.EndSample();
         }
@@ -120,9 +127,30 @@ namespace GLTFast {
         ) {
             Profiler.BeginSample("CreateNode");
             var node = m_EntityManager.CreateEntity(m_NodeArchetype);
+#if UNITY_DOTS_HYBRID
             m_EntityManager.SetComponentData(node,new Translation {Value = position});
             m_EntityManager.SetComponentData(node,new Rotation {Value = rotation});
             SetEntityScale(node, scale);
+#else
+            var isUniformScale = IsUniform(scale);
+            m_EntityManager.SetComponentData(
+                node,
+                new LocalTransform
+                {
+                    Position = position,
+                    Rotation = rotation,
+                    Scale = isUniformScale ? scale.x : 1f
+                });
+            if (!isUniformScale)
+            {
+                // TODO: Maybe instantiating another archetype instead of adding components here is more performant?
+                m_EntityManager.AddComponent<PostTransformMatrix>(node);
+                m_EntityManager.SetComponentData(
+                    node,
+                    new PostTransformMatrix { Value = float4x4.Scale(scale) }
+                    );
+            }
+#endif
             m_Nodes[nodeIndex] = node;
             m_EntityManager.SetComponentData(
                 node,
@@ -133,6 +161,7 @@ namespace GLTFast {
             Profiler.EndSample();
         }
 
+#if UNITY_DOTS_HYBRID
         void SetEntityScale(Entity node, Vector3 scale) {
             if (!scale.Equals(Vector3.one)) {
                 if (Math.Abs(scale.x - scale.y) < k_Epsilon && Math.Abs(scale.x - scale.z) < k_Epsilon) {
@@ -142,6 +171,7 @@ namespace GLTFast {
                 }
             }
         }
+#endif
 
         public void SetNodeName(uint nodeIndex, string name) {
 #if UNITY_EDITOR
@@ -170,11 +200,16 @@ namespace GLTFast {
                 node = m_Nodes[nodeIndex];
             } else {
                 node = m_EntityManager.CreateEntity(m_NodeArchetype);
+#if UNITY_DOTS_HYBRID
                 m_EntityManager.SetComponentData(node,new Translation {Value = new float3(0,0,0)});
                 m_EntityManager.SetComponentData(node,new Rotation {Value = quaternion.identity});
+#else
+                m_EntityManager.SetComponentData(node,LocalTransform.Identity);
+#endif
                 m_EntityManager.SetComponentData(node, new Parent { Value = m_Nodes[nodeIndex] });
             }
 
+#if UNITY_DOTS_HYBRID
             var hasMorphTargets = mesh.blendShapeCount > 0;
 
             for (var index = 0; index < materialIndices.Length; index++) {
@@ -199,6 +234,44 @@ namespace GLTFast {
                      // }
                  }
             }
+#else
+            var materials = new Material[materialIndices.Length];
+            for (var index = 0; index < materialIndices.Length; index++)
+            {
+                materials[index] = m_Gltf.GetMaterial(materialIndices[index]) ?? m_Gltf.GetDefaultMaterial();
+            }
+
+            var filterSettings = RenderFilterSettings.Default;
+            filterSettings.ShadowCastingMode = ShadowCastingMode.Off;
+            filterSettings.ReceiveShadows = false;
+            filterSettings.Layer = m_Settings.Layer;
+
+            var renderMeshDescription = new RenderMeshDescription
+            {
+                FilterSettings = filterSettings,
+                LightProbeUsage = LightProbeUsage.Off,
+            };
+
+            var renderMeshArray = new RenderMeshArray(materials, new[] { mesh });
+
+            for (var index = 0; index < materialIndices.Length; index++)
+            {
+                RenderMeshUtility.AddComponents(
+                    node,
+                    m_EntityManager,
+                    renderMeshDescription,
+                    renderMeshArray,
+                    MaterialMeshInfo.FromRenderMeshArrayIndices(
+                        index,
+                        0,
+                        (sbyte)index
+                        )
+                    );
+
+                m_EntityManager.SetComponentData(node, new RenderBounds {Value = mesh.bounds.ToAABB()} );
+            }
+
+#endif
             Profiler.EndSample();
         }
 
@@ -218,6 +291,7 @@ namespace GLTFast {
                 return;
             }
             Profiler.BeginSample("AddPrimitiveInstanced");
+#if UNITY_DOTS_HYBRID
             foreach (var materialIndex in materialIndices) {
                 var material = m_Gltf.GetMaterial(materialIndex) ?? m_Gltf.GetDefaultMaterial();
                 material.enableInstancing = true;
@@ -237,6 +311,70 @@ namespace GLTFast {
                     }
                 }
             }
+#else
+
+            var materials = new Material[materialIndices.Length];
+            for (var index = 0; index < materialIndices.Length; index++)
+            {
+                materials[index] = m_Gltf.GetMaterial(materialIndices[index]) ?? m_Gltf.GetDefaultMaterial();
+                materials[index].enableInstancing = true;
+            }
+
+            var filterSettings = RenderFilterSettings.Default;
+            filterSettings.ShadowCastingMode = ShadowCastingMode.Off;
+            filterSettings.ReceiveShadows = false;
+            filterSettings.Layer = m_Settings.Layer;
+
+            var renderMeshDescription = new RenderMeshDescription
+            {
+                FilterSettings = filterSettings,
+                LightProbeUsage = LightProbeUsage.Off,
+            };
+
+            var renderMeshArray = new RenderMeshArray(materials, new[] { mesh });
+            for (var index = 0; index < materialIndices.Length; index++)
+            {
+                var prototype = m_EntityManager.CreateEntity(m_NodeArchetype);
+                m_EntityManager.SetEnabled(prototype, true);
+
+                for (var i = 0; i < instanceCount; i++) {
+                    var instance = i>0 ? m_EntityManager.Instantiate(prototype) : prototype;
+
+                    var transform = new LocalTransform
+                    {
+                        Position = positions?[i] ?? Vector3.zero,
+                        Rotation = rotations?[i] ?? Quaternion.identity,
+                        Scale = 1
+                    };
+                    if (scales.HasValue)
+                    {
+                        var scale = scales.Value[i];
+                        var isUniformScale = IsUniform(scale);
+                        if (!isUniformScale)
+                        {
+                            m_EntityManager.AddComponent<PostTransformMatrix>(instance);
+                            m_EntityManager.SetComponentData(instance,new PostTransformMatrix {Value = float4x4.Scale(scale)});
+                        }
+                        else
+                        {
+                            transform.Scale = scale.x;
+                        }
+                    }
+
+                    m_EntityManager.SetComponentData(instance,transform);
+                    m_EntityManager.SetComponentData(instance, new Parent { Value = m_Nodes[nodeIndex] });
+
+                    RenderMeshUtility.AddComponents(
+                        instance,
+                        m_EntityManager,
+                        renderMeshDescription,
+                        renderMeshArray,
+                        MaterialMeshInfo.FromRenderMeshArrayIndices(index, 0, (sbyte) index)
+                    );
+                }
+
+            }
+#endif
             Profiler.EndSample();
         }
 
@@ -268,6 +406,11 @@ namespace GLTFast {
                 m_EntityManager.SetEnabled(entity, true);
             }
             Profiler.EndSample();
+        }
+
+        static bool IsUniform(Vector3 scale)
+        {
+            return Math.Abs(scale.x - scale.y) < k_Epsilon && Math.Abs(scale.x - scale.z) < k_Epsilon;
         }
     }
 }
