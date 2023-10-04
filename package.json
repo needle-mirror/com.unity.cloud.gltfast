@@ -1,7 +1,7 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.0.0-pre.2",
-  "displayName": "Unity Cloud glTFast",
+  "version": "6.0.0",
+  "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
   "keywords": [
@@ -18,19 +18,20 @@
   "dependencies": {
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
-    "com.unity.mathematics": "1.2.6",
-    "com.unity.burst": "1.8.2"
+    "com.unity.mathematics": "1.3.1",
+    "com.unity.burst": "1.8.4"
   },
   "type": "library",
+  "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Changed\n- Pull changes from 5.1.0"
+    "changelog": "### Added\n- Custom Extension API (`GLTFast.Extensions` namespace)\n- Support for alternative JSON parsing via Newtonsoft JSON\n- `Accessor.ElementByteSize`: Byte size of one element of that accessor\n- `Accessor.ByteSize`: Overall byte size\n- `IGltfReadable.GetAccessor`: Generic byte-array view into an accessor\n- `GameObjectInstantiator` events that allow further instantiation customizations\n  - `NodeCreated`\n  - `MeshAdded`\n  - `EndSceneCompleted`\n- Value array JSON parsing tests\n- String/enum conversions tests\n- (Import) Clearcoat material support in HDRP and URP (via [KHR_materials_clearcoat](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_clearcoat/) extension)\n- (Export) Clearcoat material export support for HDRP Lit shader\n\n### Changed\n- Renamed `GltfAnimation` to `Animation` for consistent naming.\n- Bumped Burst dependency version to 1.8.4\n- Bumped Mathematics dependency version to 1.3.1\n\n### Fixed\n- Added Obsolete attribute to public schema class fields that are for serialization only and should not get modified directly.\n- More robust parsing of (invalid) enum values"
   },
   "upmCi": {
-    "footprint": "ec8773ed741f74296148d53492512b2a6e954e55"
+    "footprint": "8bf4714d1b6f92f77e920fc413d6810c939ffe00"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.git",
     "type": "git",
-    "revision": "17397faecf346061150669fc608d8d926578aad0"
+    "revision": "fd22ec457226b883a31d9058a103f954f72acbd3"
   }
 }
