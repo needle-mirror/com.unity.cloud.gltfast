@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -24,14 +24,14 @@
   "type": "library",
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n- Custom Extension API (`GLTFast.Extensions` namespace)\n- Support for alternative JSON parsing via Newtonsoft JSON\n- `Accessor.ElementByteSize`: Byte size of one element of that accessor\n- `Accessor.ByteSize`: Overall byte size\n- `IGltfReadable.GetAccessor`: Generic byte-array view into an accessor\n- `GameObjectInstantiator` events that allow further instantiation customizations\n  - `NodeCreated`\n  - `MeshAdded`\n  - `EndSceneCompleted`\n- Value array JSON parsing tests\n- String/enum conversions tests\n- (Import) Clearcoat material support in HDRP and URP (via [KHR_materials_clearcoat](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_clearcoat/) extension)\n- (Export) Clearcoat material export support for HDRP Lit shader\n\n### Changed\n- Renamed `GltfAnimation` to `Animation` for consistent naming.\n- Bumped Burst dependency version to 1.8.4\n- Bumped Mathematics dependency version to 1.3.1\n\n### Fixed\n- Added Obsolete attribute to public schema class fields that are for serialization only and should not get modified directly.\n- More robust parsing of (invalid) enum values"
+    "changelog": "### Fixed\n- Compilation error when Animation module is disabled and Newtonsoft JSON package installed."
   },
   "upmCi": {
-    "footprint": "8bf4714d1b6f92f77e920fc413d6810c939ffe00"
+    "footprint": "298aa86336d0f01306bff49b80eec6a714cc1c29"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.git",
     "type": "git",
-    "revision": "fd22ec457226b883a31d9058a103f954f72acbd3"
+    "revision": "aa4b43f71db6e1b8d08b0a06b7b138c820b7a540"
   }
 }
