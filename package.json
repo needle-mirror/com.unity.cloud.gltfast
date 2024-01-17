@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -24,14 +24,14 @@
   "type": "library",
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Fixed\n- Compilation error when Animation module is disabled and Newtonsoft JSON package installed."
+    "changelog": "### Added\n- (Documentation) Explanation and user case for the add-on API\n- `GltfImport.IsTextureYFlipped` to support non-default texture orientations\n\n### Changed\n- Documentation improvements\n- Auto-formatted all markdown, USS, UXML and shader code\n- CI maintenance\n\n### Fixed\n- Updated references to *KTX for Unity*"
   },
   "upmCi": {
-    "footprint": "298aa86336d0f01306bff49b80eec6a714cc1c29"
+    "footprint": "c982cf72905570a64558d94ce7e7dfd55e932f5d"
   },
   "repository": {
-    "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.git",
+    "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "aa4b43f71db6e1b8d08b0a06b7b138c820b7a540"
+    "revision": "be8b2b4650fa546f20636da498f41059ee52f427"
   }
 }
