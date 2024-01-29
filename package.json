@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.1.0",
+  "version": "6.2.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -24,14 +24,14 @@
   "type": "library",
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n- (Documentation) Explanation and user case for the add-on API\n- `GltfImport.IsTextureYFlipped` to support non-default texture orientations\n\n### Changed\n- Documentation improvements\n- Auto-formatted all markdown, USS, UXML and shader code\n- CI maintenance\n\n### Fixed\n- Updated references to *KTX for Unity*"
+    "changelog": "### Added\n- Deprecated soft-dependency packages are detected and a warning with upgrade instructions is shown in the console.\n\n### Changed\n- Support for Draco 3D Data Compression is now provided by [*Draco for Unity* (com.unity.cloud.draco)][DracoForUnity], which is a fork of and replaces [*DracoUnity* (com.atteneder.draco)][DracoUnity].\n\n### Fixed\n- Compiler error when Newtonsoft JSON package was not installed.\n- All Draco vertex attributes are assigned by identifier instead of type. As a result, tangents are now decoded properly instead of recalculated.\n- Compilation error when scripting define `GLTFAST_BUILTIN_SHADER_GRAPH` is set.\n- `GltfImport.IsTextureYFlipped` returns correct result for non-KTX textures."
   },
   "upmCi": {
-    "footprint": "c982cf72905570a64558d94ce7e7dfd55e932f5d"
+    "footprint": "1c6410ca79e1feb437c4c55d278f770eedd92a41"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "be8b2b4650fa546f20636da498f41059ee52f427"
+    "revision": "28bb7fc6f2d34d2d3e93bd77e768ec730d5494aa"
   }
 }
