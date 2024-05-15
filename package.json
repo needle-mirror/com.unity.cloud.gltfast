@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.4.0",
+  "version": "6.5.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -19,22 +19,23 @@
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
     "com.unity.mathematics": "1.3.1",
-    "com.unity.burst": "1.8.4"
+    "com.unity.burst": "1.8.4",
+    "com.unity.collections": "1.5.1"
   },
   "type": "library",
   "unityRelease": "48f1",
   "relatedPackages": {
-    "com.unity.cloud.gltfast.tests": "6.4.0"
+    "com.unity.cloud.gltfast.tests": "6.5.0"
   },
   "_upm": {
-    "changelog": "### Added\n- Tests for all `GltfImport.Load` overloads.\n- Tests for all import Burst jobs.\n- `ICodeLogger.Log` for dynamic LogType usage.\n\n### Changed\n- *Emission* sub graph uses shader define `SHADEROPTIONS_PRE_EXPOSITION` for HDRP usage detection (replacing a custom function node that checked for `UNITY_HEADER_HD_INCLUDED`).\n- *BaseColor* sub graph uses built-in shader define [`UNITY_COLORSPACE_GAMMA`](https://docs.unity3d.com/ScriptReference/Rendering.BuiltinShaderDefine.UNITY_COLORSPACE_GAMMA.html) for project color space detection (replacing a custom function node).\n\n### Fixed\n- Shader sub graphs *BaseColor* and *Emission* are now compatible with [PolySpatial visionOS][PolySpatialVisionOS].\n- On Apple visionOS, textures are always created readable, so that [PolySpatial visionOS][PolySpatialVisionOS] is able to convert them.\n- Draco compressed tangents import tangents correctly now.\n- Removed invalid attempt to calculate normals or tangents on point or line meshes.\n- Consistent log message when a glTF extension cannot be supported due to a missing Unity package depenency (e.g. [KTX for Unity][KtxForUnity]).\n  - All missing extensions are logged (not just the first one).\n  - There's now a single message per missing package.\n  - Depending on whether that extension is required the message's type is warning or error.\n  - Added explicit message when [*meshoptimizer decompression for Unity*][meshoptUnity] is missing."
+    "changelog": "### Added\n- (Export) Support for exporting glTFast shader based materials. This reduces data loss on import-export round trips considerably.\n- (Export) Support for setting a custom scene origin via transform matrix.\n- Dependency on [Unity Collections package][Collections].\n- Added Apple Privacy Manifest documentation.\n- Export sample code.\n- XML documentation comments.\n- `float4x4.Decompose` overload that outputs rotation as type `quaternion`.\n\n### Changed\n- Faster buffer conversion jobs due to batching via [`IJobParallelForBatch`](https://docs.unity3d.com/Packages/com.unity.collections@2.4/api/Unity.Jobs.IJobParallelForBatch.html).\n- (Export) Material exporter implementation is chosen based on used shader by default.\n- (Export) Vertex attributes are discarded if they are not used/referenced.\n- (Export) Root level nodes' positions are based on their GameObject's world positions (and not their local position anymore).\n\n### Fixed\n- (Export) Discrepancy in color due to export of unused vertex colors.\n- Incorrect copyright text in some SPDX headers.\n\n### Deprecated\n- `float4x4.Decompose` overload that outputs rotation as type `float4` (quaternion values).\n\n### Removed\n- Soft dependency on deprecated [Unity Jobs package][JobsPkg].\n- Legacy code for Unity versions older than the minimum required 2020 LTS."
   },
   "upmCi": {
-    "footprint": "72b7a9915f32dfb1349e5c5ad2c3514d8d602943"
+    "footprint": "48970c64f4ddc08aeeddc76e4b4e33db9aac7d58"
   },
   "repository": {
     "url": "git@github.cds.internal.unity3d.com:unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "ffd1fa47acb24b6a012f01b9fe62b9579c5bf356"
+    "revision": "1147edf49951568fc6801475f9aac15a155d5bb5"
   }
 }
