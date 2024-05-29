@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.5.0",
+  "version": "6.6.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -25,17 +25,17 @@
   "type": "library",
   "unityRelease": "48f1",
   "relatedPackages": {
-    "com.unity.cloud.gltfast.tests": "6.5.0"
+    "com.unity.cloud.gltfast.tests": "6.6.0"
   },
   "_upm": {
-    "changelog": "### Added\n- (Export) Support for exporting glTFast shader based materials. This reduces data loss on import-export round trips considerably.\n- (Export) Support for setting a custom scene origin via transform matrix.\n- Dependency on [Unity Collections package][Collections].\n- Added Apple Privacy Manifest documentation.\n- Export sample code.\n- XML documentation comments.\n- `float4x4.Decompose` overload that outputs rotation as type `quaternion`.\n\n### Changed\n- Faster buffer conversion jobs due to batching via [`IJobParallelForBatch`](https://docs.unity3d.com/Packages/com.unity.collections@2.4/api/Unity.Jobs.IJobParallelForBatch.html).\n- (Export) Material exporter implementation is chosen based on used shader by default.\n- (Export) Vertex attributes are discarded if they are not used/referenced.\n- (Export) Root level nodes' positions are based on their GameObject's world positions (and not their local position anymore).\n\n### Fixed\n- (Export) Discrepancy in color due to export of unused vertex colors.\n- Incorrect copyright text in some SPDX headers.\n\n### Deprecated\n- `float4x4.Decompose` overload that outputs rotation as type `float4` (quaternion values).\n\n### Removed\n- Soft dependency on deprecated [Unity Jobs package][JobsPkg].\n- Legacy code for Unity versions older than the minimum required 2020 LTS."
+    "changelog": "### Added\n- Serialization/de-serialization (only) support for the KHR_materials_variants extension.\n\n### Fixed\n- Compatible with [Entities 1.2.0][Entities1.2].\n- Black materials when using low standard shader quality with the built-in render pipeline (thanks [Victor Beaupuy][Kushulain] for [#595](https://github.com/atteneder/glTFast/pull/595)).\n- (UI) Quantity of report items is not shown in importer inspector anymore. Report items cannot be removed anymore (thanks [krisrok][krisrok] for [#428](https://github.com/atteneder/glTFast/pull/630))."
   },
   "upmCi": {
-    "footprint": "48970c64f4ddc08aeeddc76e4b4e33db9aac7d58"
+    "footprint": "b4bde47e3931899916a49a9ffbbcfa96283c6042"
   },
   "repository": {
     "url": "git@github.cds.internal.unity3d.com:unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "1147edf49951568fc6801475f9aac15a155d5bb5"
+    "revision": "5fef3cd1cca7a744c3c217fb6cfcb0b0308c3429"
   }
 }
