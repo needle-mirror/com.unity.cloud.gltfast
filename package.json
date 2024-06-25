@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.6.0",
+  "version": "6.7.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -25,17 +25,17 @@
   "type": "library",
   "unityRelease": "48f1",
   "relatedPackages": {
-    "com.unity.cloud.gltfast.tests": "6.6.0"
+    "com.unity.cloud.gltfast.tests": "6.7.0"
   },
   "_upm": {
-    "changelog": "### Added\n- Serialization/de-serialization (only) support for the KHR_materials_variants extension.\n\n### Fixed\n- Compatible with [Entities 1.2.0][Entities1.2].\n- Black materials when using low standard shader quality with the built-in render pipeline (thanks [Victor Beaupuy][Kushulain] for [#595](https://github.com/atteneder/glTFast/pull/595)).\n- (UI) Quantity of report items is not shown in importer inspector anymore. Report items cannot be removed anymore (thanks [krisrok][krisrok] for [#428](https://github.com/atteneder/glTFast/pull/630))."
+    "changelog": "### Added\n- (Import) Support for [materials variants extension](https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_variants).\n- Serialization support for material extensions IOR, Sheen and Specular.\n- (Import) Ability to load a glTF from a generic `Stream` (`GltfImport.LoadStream`; thanks [sandr01d][sandr01d] for [#10](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/10)).\n\n### Changed\n- (Import) Prefabs imported from glTF assets (at design-time) don't have the glTF logo icon assigned to them anymore. This makes it more consistent with other file types (like FBX; fixes [#557](https://github.com/atteneder/glTFast/issues/557)).\n\n### Deprecated\n- `MetaMaterialExport`. Always use `MaterialExport.GetDefaultMaterialExport` to get the correct material export.\n\n### Fixed\n- (Export) glTFast shader based materials and textures are exported correctly when using the default render pipeline.\n- Added missing entries to the API documentation.\n- (Export) Base colors are now in correct, linear color space.\n- Alpha mode blend now works as expected in HDRP 11 and newer as well (fixes [#699](https://github.com/atteneder/glTFast/issues/699)).\n- (Export) Fixed mesh min/max when using Draco compression."
   },
   "upmCi": {
-    "footprint": "b4bde47e3931899916a49a9ffbbcfa96283c6042"
+    "footprint": "c379b7bbbd538aec055f6133113741f940576b8e"
   },
   "repository": {
     "url": "git@github.cds.internal.unity3d.com:unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "5fef3cd1cca7a744c3c217fb6cfcb0b0308c3429"
+    "revision": "50838b97cb3d3490b7e05f7e115d844fbcaea58e"
   }
 }
