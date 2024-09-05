@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.7.1",
+  "version": "6.8.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -25,17 +25,17 @@
   "type": "library",
   "unityRelease": "48f1",
   "relatedPackages": {
-    "com.unity.cloud.gltfast.tests": "6.7.1"
+    "com.unity.cloud.gltfast.tests": "6.8.0"
   },
   "_upm": {
-    "changelog": "### Fixed\n- (Export) Cases of corrupt glTFs when not all vertex attributes of a mesh were exported.\n- Alpha blending via baseColorTexture's alpha value is now in correct color space, less opaque and as a result consistent with other glTF viewers (affected URP and built-in render pipeline projects in linear color space; fixes [#700](https://github.com/atteneder/glTFast/issues/700))."
+    "changelog": "### Added\n- (Import) Setting to create textures readable. This allows users to access resulting textures from their scripts.\n- (Export) Non-readable meshes can be exported as well now.\n- (Export) Added support for exporting meshes with vertex compression enabled (effectively converting 16-bit float positions/normals/tangents/texture coordinates to 32-bit floats).\n- (Export) [Buffer view targets](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_bufferview_target) are set properly now.\n- (Import) Support for mesh primitive modes `TRIANGLE_STRIP` and `TRIANGLE_FAN` (thanks [Hexer611][Hexer611] for [#22](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/22))\n\n### Fixed\n- (Export) Writing to files on the web via IndexedDB now works (fixes [#625](https://github.com/atteneder/glTFast/issues/625))\n- (Export) test results are validated again.\n- (Export) Removed expendable JSON content when exporting unlit materials without color or texture applied.\n- Primitve mode LINE_LOOP works as expected (thanks [Hexer611][Hexer611] for [#22](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/22)).\n- (Test) Fail export test if glTF JSON contains unexpected or misses expected properties.\n- Increased resilience against invalid animation data.\n- Broken link in `CONTRIBUTING.md` (thanks [Hexer611][Hexer611] for [#22](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/23)).\n- Loading glTFs with unknown texture extensions (e.g. WebP, `EXT_texture_webp`) now works (fixes [#705](https://github.com/atteneder/glTFast/issues/705))."
   },
   "upmCi": {
-    "footprint": "89a18a81598188aa41edf4cee35c3499fb10f757"
+    "footprint": "4c8f893056bd48d2c184ffc39b3c94d232fea4a1"
   },
   "repository": {
     "url": "git@github.cds.internal.unity3d.com:unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "be5c6f602a99cb3a72426a45302402a7d8f6cc69"
+    "revision": "64f3257d9354fd61e8a9232690648cc2f1d4b941"
   }
 }
