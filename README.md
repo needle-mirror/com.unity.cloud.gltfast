@@ -1,23 +1,22 @@
 # Unity glTFast
 
-[![codecov](https://codecov.unity3d.com/ghe/unity/com.unity.cloud.gltfast.src/graph/badge.svg?token=QZYEFH0SDC)](https://codecov.unity3d.com/ghe/unity/com.unity.cloud.gltfast.src)
+Use *glTFast* to import and export [glTF&trade;][gltf] 3D files efficiently at runtime or in the Editor.
 
-<p align="center">
-<img src="./Documentation~/Images/unity-gltf-logos.png" alt="Unity and glTF logos side by side" />
-</p>
+## Installing
 
-*Unity glTFast* enables use of [glTF&trade; (GL Transmission Format)][gltf] asset files in [Unity&reg;][unity].
+*Unity glTFast* is a [Package][UnityPackage] and is installed via the name `com.unity.cloud.gltfast` in the Package Manager window in Unity&reg;. See [installation](Documentation~/installation.md) for detailed instructions.
 
-It focuses on speed, memory efficiency and a small build footprint while also providing:
-
-- 100% [glTF 2.0 specification][gltf-spec] compliance
-- Ease of use
-- Robustness and Stability
-- Customization and extensibility for advanced users
+> **NOTE:** This package originally had the identifier `com.atteneder.gltfast`. Consult the [upgrade guide](./Documentation~/UpgradeGuides.md#unity-fork) to learn how to switch to the Unity version (`com.unity.cloud.gltfast`) or [install the original package](./Documentation~/Original.md).
 
 ## Features
 
-*Unity glTFast* supports the full [glTF 2.0 specification][gltf-spec] and many extensions. It works with Universal, High Definition and the Built-In Render Pipelines on all platforms.
+Speed, memory efficiency and a small build footprint are focus points of *Unity glTFast*.
+
+The [glTF 2.0 specification][gltf-spec] and a large and growing number of [glTF extensions][gltf-ext] are supported.
+
+All platforms as well as Universal, High Definition and Built-In Render Pipelines are supported.
+
+Advanced users can customize or extend *glTFast* in various ways.
 
 See the [comprehensive list of supported features and extensions](./Documentation~/features.md).
 
@@ -35,12 +34,6 @@ There are four use-cases for glTF within Unity
 [![Schematic diagram of the four glTF workflows](./Documentation~/Images/Unity-glTF-workflows.png "The four glTF workflows")][workflows]
 
 Read more about the workflows in the [documentation][workflows].
-
-## Installing
-
-[Installation instructions](./Documentation~/installation.md)
-
-> **NOTE:** This package originally had the identifier `com.atteneder.gltfast`. Consult the [upgrade guide](./Documentation~/UpgradeGuides.md#unity-fork) to learn how to switch to the Unity version (`com.unity.cloud.gltfast`) or [install the original package](./Documentation~/Original.md).
 
 ## Usage
 
@@ -112,10 +105,12 @@ limitations under the License.
 
 *Khronos&reg;* is a registered trademark and [glTF&trade;][gltf] is a trademark of [The Khronos Group Inc][khronos].
 
-[gltf-spec]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
 [gltf]: https://www.khronos.org/gltf
+[gltf-spec]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
+[gltf-ext]: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions
 [gltfasset_component]: ./Documentation~/Images/gltfasset_component.png  "Inspector showing a GltfAsset component added to a GameObject"
 [import-gif]: ./Documentation~/Images/import.gif  "Video showing glTF files being copied into the Assets folder and imported"
 [khronos]: https://www.khronos.org
 [unity]: https://unity.com
+[UnityPackage]: https://docs.unity3d.com/Manual/PackagesList.html
 [workflows]: ./Documentation~/index.md#workflows

@@ -7,7 +7,7 @@
         "glTFast.Export",
         "UnityEngine.TestTools.Graphics",
         "Unity.RenderPipelines.HighDefinition.Runtime",
-        "com.unity.formats.gltf.validator.Editor"
+        "UnityEditor.Formats.Gltf.Validation"
     ],
     "includePlatforms": [
         "Editor"
@@ -41,7 +41,7 @@
         },
         {
             "name": "com.unity.formats.gltf.validator",
-            "expression": "",
+            "expression": "0.2.0-preview.1",
             "define": "GLTF_VALIDATOR"
         }
     ],

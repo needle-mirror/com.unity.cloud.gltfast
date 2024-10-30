@@ -138,7 +138,10 @@ namespace GLTFast.Export
                     || uMaterial.IsKeywordEnabled(k_KeywordSmoothnessTextureAlbedoChannelA)
                 );
 
-            OrmImageExport ormImageExport = null;
+            Texture2D occlusionTexture = null;
+            Texture2D metalGlossTexture = null;
+            Texture2D smoothnessTexture = null;
+
             var mainTexProperty = MainTexProperty;
             if (uMaterial.HasProperty(k_BaseMap))
             {
@@ -147,11 +150,6 @@ namespace GLTFast.Export
             else if (uMaterial.HasProperty(k_ColorTexture))
             {
                 mainTexProperty = k_ColorTexture;
-            }
-
-            if (needsMetalRoughTexture)
-            {
-                ormImageExport = new OrmImageExport();
             }
 
             if (IsUnlit(uMaterial))
@@ -164,9 +162,10 @@ namespace GLTFast.Export
                     uMaterial,
                     material,
                     mainTexProperty,
-                    ormImageExport,
                     gltf,
-                    logger
+                    logger,
+                    out metalGlossTexture,
+                    out smoothnessTexture
                 );
             }
             else if (uMaterial.HasProperty(mainTexProperty))
@@ -202,14 +201,14 @@ namespace GLTFast.Export
                 {
                     if (occTex is Texture2D occTex2d)
                     {
-                        if (ormImageExport == null)
+                        if (!needsMetalRoughTexture)
                         {
                             material.occlusionTexture = ExportOcclusionTextureInfo(occTex2d, gltf);
                         }
                         else
                         {
                             material.occlusionTexture = new OcclusionTextureInfo();
-                            ormImageExport.SetOcclusionTexture(occTex2d);
+                            occlusionTexture = occTex2d;
                         }
                         if (material.occlusionTexture != null)
                         {
@@ -229,8 +228,9 @@ namespace GLTFast.Export
                 }
             }
 
-            if (ormImageExport != null && material.pbrMetallicRoughness != null)
+            if (needsMetalRoughTexture && material.pbrMetallicRoughness != null)
             {
+                var ormImageExport = new OrmImageExport(metalGlossTexture, occlusionTexture, smoothnessTexture);
                 if (MaterialExport.AddImageExport(gltf, ormImageExport, out var ormTextureId))
                 {
                     if (material.pbrMetallicRoughness.MetallicRoughnessTexture != null)
@@ -276,11 +276,14 @@ namespace GLTFast.Export
             UnityEngine.Material uMaterial,
             Material material,
             int mainTexProperty,
-            OrmImageExport ormImageExport,
             IGltfWritable gltf,
-            ICodeLogger logger
+            ICodeLogger logger,
+            out Texture2D metalGlossTexture,
+            out Texture2D smoothnessTexture
         )
         {
+            metalGlossTexture = null;
+            smoothnessTexture = null;
             var success = true;
             var pbr = new PbrMetallicRoughness { metallicFactor = 0, roughnessFactor = 1.0f };
 
@@ -364,7 +367,7 @@ namespace GLTFast.Export
                     if (mrTex is Texture2D mrTex2d)
                     {
                         pbr.metallicRoughnessTexture = pbr.metallicRoughnessTexture ?? new TextureInfo();
-                        ormImageExport.SetMetalGlossTexture(mrTex2d);
+                        metalGlossTexture = mrTex2d;
                         if (HasMetallicGlossMap(uMaterial))
                             pbr.metallicFactor = 1.0f;
                         ExportTextureTransform(pbr.metallicRoughnessTexture, uMaterial, k_MetallicGlossMap, gltf);
@@ -383,7 +386,7 @@ namespace GLTFast.Export
                 if (smoothnessTex != null)
                 {
                     pbr.metallicRoughnessTexture = pbr.metallicRoughnessTexture ?? new TextureInfo();
-                    ormImageExport.SetSmoothnessTexture(smoothnessTex);
+                    smoothnessTexture = smoothnessTex;
                     ExportTextureTransform(pbr.metallicRoughnessTexture, uMaterial, mainTexProperty, gltf);
                 }
             }

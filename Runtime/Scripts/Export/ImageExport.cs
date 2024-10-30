@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -22,7 +21,7 @@ namespace GLTFast.Export
         /// <summary>
         /// Main source texture
         /// </summary>
-        protected Texture2D m_Texture;
+        protected readonly Texture2D m_Texture;
 
         /// <summary>
         /// Preferred image format
@@ -38,7 +37,7 @@ namespace GLTFast.Export
         /// <summary>
         /// True if <seealso cref="m_AssetPath"/> is a valid path
         /// </summary>
-        protected bool validAssetPath => !string.IsNullOrEmpty(m_AssetPath) && File.Exists(m_AssetPath);
+        protected bool ValidAssetPath => !string.IsNullOrEmpty(m_AssetPath) && File.Exists(m_AssetPath);
 #endif
 
         /// <summary>
@@ -73,7 +72,7 @@ namespace GLTFast.Export
             get
             {
 #if UNITY_EDITOR
-                if (validAssetPath) {
+                if (ValidAssetPath) {
                     var nameWithoutExtension = Path.GetFileNameWithoutExtension(m_AssetPath);
                     return $"{nameWithoutExtension}.{FileExtension}";
                 }
@@ -155,7 +154,7 @@ namespace GLTFast.Export
         public override bool Write(string filePath, bool overwrite)
         {
 #if UNITY_EDITOR
-            if (validAssetPath && GetFormatFromExtension(m_AssetPath)==ImageFormat) {
+            if (ValidAssetPath && GetFormatFromExtension(m_AssetPath)==ImageFormat) {
                 File.Copy(m_AssetPath, filePath, overwrite);
                 return true;
             }
@@ -172,7 +171,7 @@ namespace GLTFast.Export
         public override byte[] GetData()
         {
 #if UNITY_EDITOR
-            if (validAssetPath && GetFormatFromExtension(m_AssetPath)==ImageFormat) {
+            if (ValidAssetPath && GetFormatFromExtension(m_AssetPath)==ImageFormat) {
                 return File.ReadAllBytes(m_AssetPath);
             }
 #endif
@@ -184,7 +183,6 @@ namespace GLTFast.Export
         /// Default hash function.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
-        [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
             var hash = 13;

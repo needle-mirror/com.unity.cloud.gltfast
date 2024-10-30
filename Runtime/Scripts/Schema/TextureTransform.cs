@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using Unity.Mathematics;
+
 namespace GLTFast.Schema
 {
 
@@ -40,7 +42,7 @@ namespace GLTFast.Schema
             {
                 writer.AddArrayProperty("scale", scale);
             }
-            if (rotation != 0)
+            if (math.abs(rotation) >= float.Epsilon)
             {
                 writer.AddProperty("rotation", rotation);
             }

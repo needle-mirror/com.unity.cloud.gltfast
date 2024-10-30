@@ -411,7 +411,7 @@ namespace GLTFast.Materials
                     textureScaleTranslation.x = tt.scale[0];
                     textureScaleTranslation.y = tt.scale[1];
                 }
-                if (tt.rotation != 0)
+                if (math.abs(tt.rotation) >= float.Epsilon)
                 {
                     var cos = math.cos(tt.rotation);
                     var sin = math.sin(tt.rotation);

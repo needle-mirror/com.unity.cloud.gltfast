@@ -299,7 +299,7 @@ namespace GLTFast.Export
             var st = uMaterial.GetVector(scaleTransformPropertyId);
             var r = uMaterial.GetVector(rotationPropertyId);
 
-            if (st.z != 0 || st.w != 0)
+            if (math.abs(st.z) >= float.Epsilon || math.abs(st.w) >= float.Epsilon)
             {
                 result ??= new TextureTransform();
                 result.offset = new[] { st.z, st.w };
@@ -307,14 +307,14 @@ namespace GLTFast.Export
 
             var uvTransform = UvTransform.FromMatrix(new float2x2(st.x, st.y, r.x, r.y));
 
-            if (uvTransform.rotation != 0)
+            if (math.abs(uvTransform.rotation) > float.Epsilon)
             {
                 result ??= new TextureTransform();
                 result.rotation = uvTransform.rotation;
             }
 
             if (math.abs(uvTransform.scale.x - 1) > math.EPSILON
-                || math.abs(uvTransform.scale.x - 1) > math.EPSILON)
+                || math.abs(uvTransform.scale.y - 1) > math.EPSILON)
             {
                 result ??= new TextureTransform();
                 result.scale = new[] { uvTransform.scale[0], uvTransform.scale[1] };

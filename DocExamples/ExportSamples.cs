@@ -4,12 +4,12 @@
 using System.Threading.Tasks;
 using UnityEngine.Serialization;
 
-namespace Samples.Documentation.Manual
+namespace GLTFast.Documentation.Examples
 {
     using UnityEngine;
     using GLTFast;
-    using GLTFast.Export;
-    using GLTFast.Logging;
+    using Export;
+    using Logging;
 
     class ExportSamples : MonoBehaviour
     {
@@ -18,7 +18,7 @@ namespace Samples.Documentation.Manual
         [SerializeField]
         string destinationFilePath;
 
-        async void AdvancedExport()
+        async Task AdvancedExport()
         {
             #region AdvancedExport
 

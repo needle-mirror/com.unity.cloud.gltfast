@@ -2,22 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #if NEWTONSOFT_JSON
-namespace Samples.Documentation.Manual
+namespace GLTFast.Documentation.Examples
 {
 #region CustomGltfImport
     using GLTFast;
-    using GLTFast.Addons;
+    using Addons;
     using System;
-    using System.Threading.Tasks;
     using UnityEngine;
     using GltfImport = GLTFast.Newtonsoft.GltfImport;
 
-    public class CustomGltfImport : MonoBehaviour
+    class CustomGltfImport : MonoBehaviour
     {
         // Path to the gltf asset to be imported
         public string Uri;
 
-        async Task Start()
+        async void Start()
         {
             try
             {
@@ -64,7 +63,7 @@ namespace Samples.Documentation.Manual
         }
     }
 
-    public class MyInstantiatorAddon
+    class MyInstantiatorAddon
     {
         GltfImport m_GltfImport;
         GameObjectInstantiator m_Instantiator;
@@ -86,7 +85,7 @@ namespace Samples.Documentation.Manual
             var gltf = m_GltfImport.GetSourceRoot();
 
             var node = gltf.Nodes[(int)nodeIndex] as GLTFast.Newtonsoft.Schema.Node;
-            var extras = node.extras;
+            var extras = node?.extras;
 
             if (extras == null)
                 return;

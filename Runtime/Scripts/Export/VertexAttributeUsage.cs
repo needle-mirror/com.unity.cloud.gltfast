@@ -61,7 +61,7 @@ namespace GLTFast.Export
         /// </summary>
         /// <param name="attr">Vertex attribute.</param>
         /// <returns>Vertex attribute mask with corresponding flag enabled.</returns>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException">Thrown when an unknown VertexAttribute is detected.</exception>
         public static VertexAttributeUsage ToVertexAttributeUsage(this VertexAttribute attr)
         {
             return attr switch

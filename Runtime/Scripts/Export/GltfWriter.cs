@@ -124,7 +124,6 @@ namespace GLTFast.Export
         /// <param name="deferAgent">Defer agent (<see cref="IDeferAgent"/>); decides when/if to preempt
         /// export to preserve a stable frame rate.</param>
         /// <param name="logger">Interface for logging (error) messages.</param>
-        /// <param name="meshIdToBonesId">Function used to get the bone Ids of a given mesh</param>
         public GltfWriter(
             ExportSettings exportSettings = null,
             IDeferAgent deferAgent = null,
@@ -437,7 +436,7 @@ namespace GLTFast.Export
                 sampler = samplerId
             };
 
-            var index = m_Textures.IndexOf(texture);
+            var index = m_Textures.FindIndex(i => TextureComparer.Equals(i, texture));
             if (index >= 0) {
                 return index;
             }
@@ -921,7 +920,7 @@ namespace GLTFast.Export
                     task = BakeMesh(meshId, meshData[meshId]);
                 }
 
-                if (m_Settings.Deterministic)
+                if (m_Settings.Deterministic || tasks == null)
                 {
                     await task;
                 }
@@ -1177,8 +1176,10 @@ namespace GLTFast.Export
                     topology = subMeshTopology;
                 }
                 else
+                if (topology.Value != subMeshTopology)
                 {
-                    Assert.AreEqual(topology.Value, subMeshTopology, "Mixed topologies are not supported!");
+                    m_Logger?.Error(LogCode.TopologyUnsupported, "mixed");
+                    return;
                 }
                 var mode = GetDrawMode(subMeshTopology);
                 if (!mode.HasValue)
@@ -1215,8 +1216,12 @@ namespace GLTFast.Export
                     indices = indexAccessorId,
                 };
             }
-            Assert.IsTrue(topology.HasValue);
             Profiler.EndSample(); // "BakeMesh 1"
+            if (!topology.HasValue)
+            {
+                m_Logger?.Error(LogCode.TopologyUnsupported, "unknown");
+                return;
+            }
 
             int indexBufferViewId;
             if (uMesh.indexFormat == IndexFormat.UInt16)
@@ -1355,7 +1360,7 @@ namespace GLTFast.Export
 #endif
                     meshData.GetVertexData(stream);
 
-                outputStreams[stream] = new NativeArray<byte>(outputStrides[stream] * vertexCount, Allocator.TempJob);
+                outputStreams[stream] = new NativeArray<byte>(outputStrides[stream] * vertexCount, Allocator.Persistent);
             }
 
             foreach (var pair in attrDataDict)

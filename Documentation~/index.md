@@ -1,17 +1,20 @@
 # Unity glTFast Documentation
 
-*Unity glTFast* enables use of [glTF&trade; (GL Transmission Format)][gltf] asset files in [Unity][unity].
+Use *glTFast* to import and export [glTF&trade;][gltf] 3D files efficiently at runtime or in the Editor.
 
-It focuses on speed, memory efficiency and a small build footprint while also providing:
+## Installing
 
-- 100% [glTF 2.0 specification][gltf-spec] compliance
-- Ease of use
-- Robustness and Stability
-- Customization and extensibility for advanced users
+*Unity glTFast* is a [Package][UnityPackage] and is installed via the name `com.unity.cloud.gltfast` in the Package Manager window in Unity&reg;. See [installation](installation.md) for detailed instructions.
 
 ## Features
 
-*Unity glTFast* supports the full [glTF 2.0 specification][gltf-spec] and many extensions. It works with Universal, High Definition and the Built-In Render Pipelines on all platforms.
+Speed, memory efficiency and a small build footprint are focus points of *Unity glTFast*.
+
+The [glTF 2.0 specification][gltf-spec] and a large and growing number of [glTF extensions][gltf-ext] are supported.
+
+All platforms as well as Universal, High Definition and Built-In Render Pipelines are supported.
+
+Advanced users can customize or extend *glTFast* in various ways.
 
 See the [comprehensive list of supported features and extensions](./features.md).
 
@@ -60,7 +63,8 @@ Read about [usage](ImportEditor.md) below.
 
 Use the Unity Editor as an authoring tool and export your scenes and GameObjects as *glTFs*.
 
-> Note: This feature is experimental
+> [!WARNING]
+> This feature is experimental
 
 ##### Use-cases for Editor Export
 
@@ -81,8 +85,6 @@ Allows your Unity-powered application/game to export scenes/GameObjects to glTF 
 - Build high level editing and authoring tools with Unity
 - Social media sharing
 
-> Note: This feature is coming soon (see [issue](https://github.com/atteneder/glTFast/issues/259))
-
 ## Trademarks
 
 *Unity&reg;* is a registered trademark of [Unity Technologies][unity].
@@ -96,6 +98,8 @@ Allows your Unity-powered application/game to export scenes/GameObjects to glTF 
 [gltf]: https://www.khronos.org/gltf
 [gltf-projects]: https://github.khronos.org/glTF-Project-Explorer
 [gltf-spec]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html
+[gltf-ext]: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions
 [GoogleLLC]: https://about.google/
 [khronos]: https://www.khronos.org
 [unity]: https://unity.com
+[UnityPackage]: https://docs.unity3d.com/Manual/PackagesList.html

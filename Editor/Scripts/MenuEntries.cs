@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 #if GLTF_VALIDATOR
-using Unity.glTF.Validator;
+using UnityEditor.Formats.Gltf.Validation;
 #endif
 
 namespace GLTFast.Editor

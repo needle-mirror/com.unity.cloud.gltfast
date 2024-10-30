@@ -4,12 +4,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.9.0] - 2024-10-30
+
+### Added
+- Package coherence tests that make sure package versions match across exported generator string and documentation.
+
+### Changed
+- Moved code examples that are referenced by the documentation into a different folder (`DocExamples`).
+- Renamed code example assembly/namespace to `GLTFast.Documentation.Examples` for consistency.
+
+### Fixed
+- (Test) LoadTests on Android now succeed by using `UnityWebRequest` to retrieve data from the compressed JAR file.
+- Loading glTFs from `StreamingAssets` with relative URIs containing Unicode characters on Android. UriHelper.GetBaseUri and UriHelper.GetUriString handle Android `jar:file://` schema URIs with unicode characters correctly (fixes [#667](https://github.com/atteneder/glTFast/issues/667)).
+- XML documentation fixes
+- Removed unnecessary "type" property from `package.json`.
+- Removed warning about obsolete `GraphicsDeviceType.OpenGLES2` in Unity 2023.1 or newer.
+- (Export) Missing texture transform if texture on glTFast material was scaled vertically only.
+- Improved reliability by adding null checks and imprecision-aware floating-point comparisons in various places.
+- Using immutable fields only in hash code calculation for `ImageExport` classes.
+- Refactored `GetHashCode` implementations referencing mutable fields to avoid potential unexpected behavior.
+  - `TextureComparer.Equals` made `GetHashCode`/`Equals` for `TextureBase` obsolete, so they've been removed.
+  - `MeshPrimitiveComparer` is now used for clustering mesh primitives (instead of `GetHashCode`/`Equals` on `MeshPrimitive` and sub-types).
+- Set minimum required Unity version to 2020.3.48f1 in the documentation.
+- (Export) Avoid potential loss of data by allocating output streams persistently.
+- (Test) Render export test inconclusive if the result has not been validated.
+- (Test) More explicit error message by throwing innermost exception while preserving the stack trace during async tests.
+- (Documentation) Various clarifications, improvements and fixes, based on user feedback.
+
+### Removed
+- Outdated and unused code coverage badge.
+
 ## [6.8.0] - 2024-09-05
 
 ### Added
 - (Import) Setting to create textures readable. This allows users to access resulting textures from their scripts.
 - (Export) Non-readable meshes can be exported as well now.
 - (Export) Added support for exporting meshes with vertex compression enabled (effectively converting 16-bit float positions/normals/tangents/texture coordinates to 32-bit floats).
+- (Export) Skinned meshes export support (thanks [Hugo Pereira][Hugo-Didimo] for [#512](https://github.com/atteneder/glTFast/pull/512)).
 - (Export) [Buffer view targets](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#_bufferview_target) are set properly now.
 - (Import) Support for mesh primitive modes `TRIANGLE_STRIP` and `TRIANGLE_FAN` (thanks [Hexer611][Hexer611] for [#22](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/22))
 
@@ -114,20 +145,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [6.3.0] - 2024-03-27
 
-## Added
+### Added
 - Runtime import tests.
 - Runtime export tests.
 - (Export) Added development-time checks for valid JSON string literals.
 - Added Apple Privacy Manifest file to `/Plugins` directory.
 
-## Changed
+### Changed
 - Refactored test scripts folder layout.
 - (Export) Normal maps are exported in PNG format by default.
 - (Export) HDRP area lights are still exported as spot-lights, but their intensity is taken from `Light.intensity` (still incorrect, but more consistent).
 - Switched from asset-path-based to GUID-based shader loading (in the Editor 2021 and newer) in order to allow for a flexible folder layout without risking breaks/regressions should the layout change in the future.
 - Avoid expensive UnityEngine.Object null check when accessing cached default shaders.
 
-## Fixed
+### Fixed
 - Exception when required glTF shader is not included.
 - Compiler errors when safe mode (`GLTFAST_SAFE` scripting define) is enabled.
 - Compiler error with High Definition Render Pipeline version 17 (2023.3)
@@ -1228,6 +1259,7 @@ This release contains multiple breaking changes. Please read the [upgrade guide]
 [EricBeetsOfficial-Opuscope]: https://github.com/EricBeetsOfficial-Opuscope
 [Hexer611]: https://github.com/Hexer611
 [Holo-Krzysztof]: https://github.com/Holo-Krzysztof
+[Hugo-Didimo]: https://github.com/Hugo-Didimo
 [hybridherbst]: https://github.com/hybridherbst
 [krisrok]: https://github.com/krisrok
 [Kushulain]: https://github.com/Kushulain

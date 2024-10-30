@@ -18,10 +18,14 @@ namespace GLTFast
             if (uri == null) return null;
             if (!uri.IsAbsoluteUri)
             {
-                var uriString = Path.GetDirectoryName(uri.OriginalString) ?? "";
-                return new Uri(uriString, UriKind.Relative);
+                var directoryName = Path.GetDirectoryName(uri.OriginalString) ?? "";
+                return new Uri(directoryName, UriKind.Relative);
             }
-            return new Uri(uri, ".");
+            var uriString = uri.OriginalString;
+            var index = uriString.LastIndexOfAny(new[] { '/', '\\' });
+            return index < 0
+                ? new Uri("", UriKind.Relative)
+                : new Uri(uriString.Substring(0, index + 1));
         }
 
         /// <summary>
@@ -47,7 +51,7 @@ namespace GLTFast
                     {
                         baseUri = new Uri(baseUri, "..");
                     }
-                    return new Uri(baseUri, uri);
+                    return new Uri(Combine(baseUri.OriginalString, uri));
                 }
 
                 var parentPath = baseUri.OriginalString;
@@ -185,5 +189,22 @@ namespace GLTFast
         //      }
         //      return null;
         //  }
+
+        internal static string Combine(string baseUri, string uri)
+        {
+            var sepIndex = baseUri.LastIndexOfAny(new[] { '/', '\\' });
+            var uriStartsWithSep = uri.IndexOfAny(new[] { '/', '\\' }, 0, 1) == 0;
+            var trimmedUri = uriStartsWithSep
+                ? uri.Substring(1)
+                : uri;
+            if (sepIndex > 0)
+            {
+                return sepIndex == baseUri.Length - 1
+                    ? $"{baseUri}{trimmedUri}"
+                    : $"{baseUri}{baseUri[sepIndex]}{trimmedUri}";
+            }
+
+            return $"{baseUri}/{trimmedUri}";
+        }
     }
 }

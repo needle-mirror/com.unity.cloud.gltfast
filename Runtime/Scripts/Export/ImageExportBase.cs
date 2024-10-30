@@ -3,6 +3,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Assertions;
 #if UNITY_2022_1_OR_NEWER
 using UnityEngine.Experimental.Rendering;
 #endif
@@ -67,15 +68,13 @@ namespace GLTFast.Export
         {
 
 #if UNITY_IMAGECONVERSION
+            Assert.IsNotNull(texture);
+
             Texture2D exportTexture;
             var tmpTexture = false;
 
             if (texture.isReadable && blitMaterial==null) {
                 exportTexture = texture;
-                if (exportTexture == null) {
-                    // m_Logger?.Error(LogCode.ImageFormatUnknown,texture.name,"n/a");
-                    return null;
-                }
             } else {
                 var destRenderTexture = RenderTexture.GetTemporary(
                     texture.width,

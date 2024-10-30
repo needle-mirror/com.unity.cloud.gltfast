@@ -94,41 +94,22 @@ namespace GLTFast.Schema
         /// </summary>
         /// <param name="obj">The object to compare with the current object.</param>
         /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override bool Equals(object obj)
         {
-            //Check for null and compare run-time types.
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            return Equals((Texture)obj);
-        }
-
-        bool Equals(Texture other)
-        {
-            return source == other.source
-                && sampler == other.sampler
-                && (
-                    Extensions == null && other.Extensions == null
-                    || (Extensions != null && Extensions.Equals(other.Extensions))
-                );
+            // ReSharper disable once BaseObjectEqualsIsObjectEquals
+            return base.Equals(obj);
         }
 
         /// <summary>
         /// Default hash function.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override int GetHashCode()
         {
-#if NET_STANDARD
-            return HashCode.Combine(source, sampler, Extensions.GetHashCode());
-#else
-            var hash = 17;
-            hash = hash * 31 + source;
-            hash = hash * 31 + sampler;
-            hash = hash * 31 + Extensions.GetHashCode();
-            return hash;
-#endif
+            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
+            return base.GetHashCode();
         }
 
         /// <summary>

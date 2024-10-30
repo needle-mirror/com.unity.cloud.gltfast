@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Unity.Mathematics;
 using UnityEngine;
@@ -25,8 +24,8 @@ namespace GLTFast.Export
         static Material s_OcclusionBlitMaterial;
         static Material s_GlossBlitMaterial;
 
-        Texture2D m_OccTexture;
-        Texture2D m_SmoothnessTexture;
+        readonly Texture2D m_OccTexture;
+        readonly Texture2D m_SmoothnessTexture;
 
         /// <summary>
         /// Default constructor
@@ -134,33 +133,6 @@ namespace GLTFast.Export
         /// True if occlusion texture was set
         /// </summary>
         public bool HasOcclusion => m_OccTexture != null;
-
-        /// <summary>
-        /// Assigns a Metal/Gloss source texture
-        /// </summary>
-        /// <param name="texture">Metal/Gloss texture</param>
-        public void SetMetalGlossTexture(Texture2D texture)
-        {
-            m_Texture = texture;
-        }
-
-        /// <summary>
-        /// Assigns an occlusion source texture
-        /// </summary>
-        /// <param name="texture">Occlusion texture</param>
-        public void SetOcclusionTexture(Texture2D texture)
-        {
-            m_OccTexture = texture;
-        }
-
-        /// <summary>
-        /// Assigns a smoothness source texture
-        /// </summary>
-        /// <param name="texture">Smoothness texture</param>
-        public void SetSmoothnessTexture(Texture2D texture)
-        {
-            m_SmoothnessTexture = texture;
-        }
 
         static Material GetMetalGlossBlitMaterial()
         {
@@ -321,7 +293,6 @@ namespace GLTFast.Export
         }
 
         /// <inheritdoc />
-        [SuppressMessage("ReSharper", "NonReadonlyMemberInGetHashCode")]
         public override int GetHashCode()
         {
             var hash = 14;

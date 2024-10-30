@@ -72,10 +72,9 @@ The glTF 2.0 specification is fully supported, with only a few minor remarks.
 | Per primitive material | ✅ | ✅
 | Joints (up to 4 per vertex) | ✅ | ✅
 | Weights (up to 4 per vertex) | ✅ | ✅
-| | |
-| **Morph Targets / Blend Shapes**
-| Sparse accessors | ² ✅ |
 | [Skins][Skins] | ✅ | ✅
+| Morph Targets (Blend Shapes) | ✅ |
+| Sparse accessors | ² ✅ |
 | | |
 | **Animation**
 | via legacy Animation System | ✅ |
@@ -89,6 +88,8 @@ The glTF 2.0 specification is fully supported, with only a few minor remarks.
 ³: Animation clips can be imported Mecanim compatible, but they won't be assigned and cannot be played back without further work.
 
 ## Extensions
+
+glTF defines an [extension mechanism][gltf-ext] that allows the base format to be extended with new capabilities. Here's a list of extensions and their current state of support.
 
 ### Official Khronos&reg; extensions
 
@@ -306,7 +307,7 @@ Possibly incomplete list of things that are known to not work with Entities yet:
 
 ## Unity Version Support
 
-*Unity glTFast* requires Unity 2020.1 or newer.
+*Unity glTFast* requires Unity 2020.3.48f1 or newer.
 
 ## Legend
 
@@ -335,6 +336,7 @@ Possibly incomplete list of things that are known to not work with Entities yet:
 [Entities]: https://docs.unity3d.com/Packages/com.unity.entities@latest
 [EntitiesGraphics]: https://docs.unity3d.com/Packages/com.unity.entities.graphics@latest
 [GoogleLLC]: https://about.google/
+[gltf-ext]: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#specifying-extensions
 [HDRP]: https://unity.com/srp/High-Definition-Render-Pipeline
 [IBL]: https://github.com/atteneder/glTFast/issues/108
 [IOR]: https://github.com/atteneder/glTFast/issues/207

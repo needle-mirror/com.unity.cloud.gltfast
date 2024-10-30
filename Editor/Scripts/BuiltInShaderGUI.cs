@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
 using static GLTFast.Materials.MaterialGenerator;
@@ -70,7 +71,7 @@ namespace GLTFast.Editor
                     "Base Color Tex Rotation");
                 if (m_UVTransform.HasValue)
                 {
-                    if (m_UVTransform.Value.rotation != 0)
+                    if (math.abs(m_UVTransform.Value.rotation) >= float.Epsilon)
                     {
                         material.EnableKeyword(TextureTransformKeyword);
                     }

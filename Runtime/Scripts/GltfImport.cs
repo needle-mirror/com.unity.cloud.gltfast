@@ -167,6 +167,7 @@ namespace GLTFast
         };
 
         static IDeferAgent s_DefaultDeferAgent;
+        static MeshPrimitiveComparer s_MeshPrimitiveComparer = new MeshPrimitiveComparer();
 
         IDownloadProvider m_DownloadProvider;
         IMaterialGenerator m_MaterialGenerator;
@@ -3013,11 +3014,11 @@ namespace GLTFast
 
             Profiler.BeginSample("LoadAccessorData.Init");
 
-            var mainBufferTypes = new Dictionary<MeshPrimitiveBase, MainBufferType>();
+            var mainBufferTypes = new Dictionary<MeshPrimitiveBase, MainBufferType>(s_MeshPrimitiveComparer);
             var meshCount = gltf.Meshes?.Count ?? 0;
-            m_MeshPrimitiveCluster = gltf.Meshes == null
-                ? null
-                : new Dictionary<MeshPrimitiveBase, List<(int MeshIndex, MeshPrimitiveBase Primitive)>>[meshCount];
+            m_MeshPrimitiveCluster = meshCount > 0
+                ? new Dictionary<MeshPrimitiveBase, List<(int MeshIndex, MeshPrimitiveBase Primitive)>>[meshCount]
+                : null;
             Dictionary<MeshPrimitiveBase, MorphTargetsContext> morphTargetsContexts = null;
 #if DEBUG
             var perAttributeMeshCollection = new Dictionary<Attributes,HashSet<int>>();
@@ -3033,7 +3034,7 @@ namespace GLTFast
             {
                 var mesh = gltf.Meshes[meshIndex];
                 m_MeshPrimitiveIndex[meshIndex] = totalPrimitives;
-                var cluster = new Dictionary<MeshPrimitiveBase, List<(int MeshIndex, MeshPrimitiveBase Primitive)>>();
+                var cluster = new Dictionary<MeshPrimitiveBase, List<(int MeshIndex, MeshPrimitiveBase Primitive)>>(s_MeshPrimitiveComparer);
 
                 for (var primIndex = 0; primIndex < mesh.Primitives.Count; primIndex++)
                 {
@@ -3048,7 +3049,7 @@ namespace GLTFast
                     {
                         if (morphTargetsContexts == null)
                         {
-                            morphTargetsContexts = new Dictionary<MeshPrimitiveBase, MorphTargetsContext>();
+                            morphTargetsContexts = new Dictionary<MeshPrimitiveBase, MorphTargetsContext>(s_MeshPrimitiveComparer);
                         }
                         else if (morphTargetsContexts.ContainsKey(primitive))
                         {
@@ -3171,7 +3172,10 @@ namespace GLTFast
             m_Primitives = new MeshResult[totalPrimitives];
             m_PrimitiveContexts = new PrimitiveCreateContextBase[totalPrimitives];
             var tmpList = new List<JobHandle>(mainBufferTypes.Count);
-            m_VertexAttributes = new Dictionary<MeshPrimitiveBase, VertexBufferConfigBase>(mainBufferTypes.Count);
+            m_VertexAttributes = new Dictionary<MeshPrimitiveBase, VertexBufferConfigBase>(
+                mainBufferTypes.Count,
+                s_MeshPrimitiveComparer
+                );
 #if DEBUG
             foreach (var perAttributeMeshes in perAttributeMeshCollection) {
                 if(perAttributeMeshes.Value.Count>1) {

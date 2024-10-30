@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2024 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-namespace Samples.Documentation.Manual
+namespace GLTFast.Documentation.Examples
 {
     #region SimpleExport
     using UnityEngine;
-    using GLTFast.Export;
+    using Export;
 
     class SimpleExport : MonoBehaviour
     {

@@ -4,6 +4,8 @@ uid: doc-project-setup
 
 # Project Setup
 
+This page explains how projects can be setup to fit your needs and tweaked in detail. As a prerequisite you first need to [install *glTFast*](installation.md).
+
 ## Materials and Shader Variants
 
 For runtime import *Unity glTFast* uses custom shader graphs or shaders for rendering glTF&trade; materials. Depending on the properties of a glTF material (and extensions it relies on), a specific [shader variant][shader-variants] will get used. In the Editor this shader variant will be built on-demand, but in order for materials to work in your build, you **have** to make sure all shader variants that you're going to need are included.
@@ -30,12 +32,6 @@ Depending on the Unity version and render pipeline in use, different shader grap
 - Shader graphs in folder `Runtime/Shader/Legacy` for older Universal / High-Definition render pipe versions
 - Shaders in folder `Runtime/Shader/Built-In` for the built-in render pipeline
 
-## Texture Support
-
-In order to be able to import and export PNG and Jpeg textures, the built-in packages [*Unity Web Request Texture*][uwrt] (for loading image URIs) and [*Image Conversion*][ImgConv] have to be enabled.
-
-So if you don't need PNG/Jpeg support (because you use only KTX&trade; 2.0 textures or no textures at all), you can disable those packages and reduce your build size a bit.
-
 ### Shader Graphs and the Built-In Render Pipeline
 
 > This approach is experimental and has know shading issues
@@ -44,6 +40,12 @@ Built-In render pipe projects can optionally use the shader graphs instead of th
 
 - Installing Shader Graph version 12 or newer
 - Adding `GLTFAST_BUILTIN_SHADER_GRAPH` to the list of scripting define symbols in the project settings
+
+## Optional Packages
+
+*glTFast* has soft-dependencies on some [optional packages](installation.md#optional-packages). By not installing those packages you might be able to reduce your final build size, so consider doing that.
+
+For example, if you don't need PNG/Jpeg support (because you use only KTX&trade; 2.0 textures or no textures at all), you can disable the *Image Conversion* and *UnityWebRequestTexture* modules.
 
 ## Readable Mesh Data
 

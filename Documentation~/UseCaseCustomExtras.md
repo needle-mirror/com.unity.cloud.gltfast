@@ -59,11 +59,11 @@ To create a custom glTF import behavior, follow these steps:
 4. Select **C# Script**.
 5. Rename the new script as `CustomGltfImport`.
 6. Open the `CustomGltfImport` script and replace the content with the following:
-   [!code-cs [custom-gltf-import](../Samples/Documentation/Manual/CustomGltfImport.cs#CustomGltfImport)]
+   [!code-cs [custom-gltf-import](../DocExamples/CustomGltfImport.cs#CustomGltfImport)]
 7. Repeat step 2-4 to create another new script
 8. Rename the new script as `ExtraData`.
 9. Open the `ExtraData` script and replace the content with the following:
-   [!code-cs [extra-data](../Samples/Documentation/Manual/ExtraData.cs#ExtraData)]
+   [!code-cs [extra-data](../DocExamples/ExtraData.cs#ExtraData)]
 
 ### Add assembly definitions
 
@@ -92,7 +92,7 @@ To set up a new scene, follow these steps:
 Select **Play**, the glTF asset should be loaded and displayed at runtime.
 
 You can verify that the custom data in the `extras` property of the glTF is imported correctly by inspecting the loaded glTF asset:
-![Screen capture that displays the extra data in the imported glTF asset](Images/gltf-extra-data.PNG)
+![Screen capture that displays the extra data in the imported glTF asset](Images/gltf-extra-data.png)
 
 ## Trademarks
 

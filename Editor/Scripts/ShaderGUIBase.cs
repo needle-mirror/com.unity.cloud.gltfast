@@ -77,7 +77,7 @@ namespace GLTFast.Editor
                 float2x2 rotScale = math.mul(new float2x2(cos, sin, -sin, cos), new float2x2(newUvTransform.scale.x, 0, 0, newUvTransform.scale.y));
                 material.SetVector(scaleTransformPropertyId, new Vector4(rotScale.c0.x, rotScale.c1.y, currentScaleTransform.z, currentScaleTransform.w));
                 material.SetVector(rotationPropertyId, new Vector4(rotScale.c1.x, rotScale.c0.y, 0, 0));
-                if (newUvTransform.rotation == 0)
+                if (math.abs(newUvTransform.rotation) < float.Epsilon)
                 {
                     material.DisableKeyword(TextureTransformKeyword);
                 }

@@ -50,7 +50,7 @@ namespace GLTFast
         /// </summary>
         MaterialsClearcoat,
         /// <summary>
-        /// <see href="https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_variants">KHR_materials_variants</see> glTF extension
+        /// <a href="https://github.com/KhronosGroup/glTF/tree/main/extensions/2.0/Khronos/KHR_materials_variants">KHR_materials_variants</a> glTF extension
         /// </summary>
         MaterialsVariants,
         /// <summary>

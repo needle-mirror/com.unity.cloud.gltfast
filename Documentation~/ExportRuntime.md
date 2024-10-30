@@ -10,7 +10,8 @@ The easiest way to include them is to add `glTFExport.shadervariants` to the lis
 
 ## Export via Script
 
-> **NOTE:** The `GLTFast.Export` namespace can only be used if you reference both `glTFast` and `glTFast.Export` Assemblies in your [Assembly Definition][asmdef].
+> [!IMPORTANT]
+> The `GLTFast.Export` namespace can only be used if you reference both `glTFast` and `glTFast.Export` Assemblies in your [Assembly Definition][asmdef].
 
 Here's a step-by-step guide to export a GameObject hierarchy/scene from script
 
@@ -22,15 +23,16 @@ Here's a step-by-step guide to export a GameObject hierarchy/scene from script
 
 glTF export might create more than one file. For example the binary buffer is usually a separate `.bin` file and textures might be separate files as well.
 
-[!code-cs [simple-export](../Samples/Documentation/Manual/SimpleExport.cs#SimpleExport)]
+[!code-cs [simple-export](../DocExamples/SimpleExport.cs#SimpleExport)]
 
 After calling [SaveToFileAndDispose](xref:GLTFast.Export.GameObjectExport.SaveToFileAndDispose*) the GameObjectExport instance becomes invalid. Do not re-use it.
 
 Further, the export can be customized by passing [ExportSettings](xref:GLTFast.Export.ExportSettings), [GameObjectExportSettings](xref:GLTFast.Export.GameObjectExportSettings) and injectables to [GameObjectExport](xref:GLTFast.Export.GameObjectExport)'s constructor:
 
-[!code-cs [advanced-export](../Samples/Documentation/Manual/ExportSamples.cs#AdvancedExport)]
+[!code-cs [advanced-export](../DocExamples/ExportSamples.cs#AdvancedExport)]
 
-> **NOTE:** Exporting to a [Stream][Stream] currently only works for self-contained glTF-Binary files (where the binary buffer and all textures are included in the `.glb` file). Trying other export settings will fail.
+> [!WARNING]
+> Exporting to a [Stream][Stream] currently only works for self-contained glTF-Binary files (where the binary buffer and all textures are included in the `.glb` file). Trying other export settings will fail.
 
 ### Scene Origin
 
@@ -38,7 +40,7 @@ When adding GameObjects to a glTF scene, the resulting glTF root nodes' position
 
 Here's an example how to export a GameObject, discarding its transform:
 
-[!code-cs [local-transform](../Samples/Documentation/Manual/ExportSamples.cs#LocalTransform)]
+[!code-cs [local-transform](../DocExamples/ExportSamples.cs#LocalTransform)]
 
 ### Vertex Attribute Discarding
 
@@ -52,13 +54,14 @@ Examples of vertex attribute discarding:
 - Normals and tangents, when the assigned material is unlit and does not require them for shading.
 - When no material was assigned, a default fallback material will be assumed. This does not require tangents nor texture coordinates, hence those are discarded.
 
-> **NOTE:** Not all cases of potential discarding are covered at the moment (e.g. unused texture coordinates when no textures are assigned).
+> [!NOTE]
+> Not all cases of potential discarding are covered at the moment (e.g. unused texture coordinates when no textures are assigned).
 
 ### Draco Compression
 
 *Unity glTFast* supports applying [Google Draco&trade; 3D Data compression][Draco] to meshes. This requires the [Draco for Unity][DracoForUnity] package to be installed.
 
-[!code-cs [draco-export](../Samples/Documentation/Manual/ExportSamples.cs#ExportSettingsDraco)]
+[!code-cs [draco-export](../DocExamples/ExportSamples.cs#ExportSettingsDraco)]
 
 ## Trademarks
 

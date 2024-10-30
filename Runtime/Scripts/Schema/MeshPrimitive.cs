@@ -119,53 +119,26 @@ namespace GLTFast.Schema
 #endif
 
         /// <summary>
-        /// Primitives are considered equal if their attributes and morph targets (if existing)
-        /// are equal. This is practical when clustering primitives of a mesh together,
-        /// that end up in a single Unity Mesh.
+        /// Determines whether two object instances are equal.
         /// </summary>
-        /// <param name="obj">Object to compare against</param>
-        /// <returns>True if attributes and morph targets are equal, false otherwise</returns>
+        /// <param name="obj">The object to compare with the current object.</param>
+        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override bool Equals(object obj)
         {
-            //Check for null and compare run-time types.
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            var b = (MeshPrimitiveBase)obj;
-
-            if (attributes.Equals(b.attributes))
-            {
-                if (targets == null)
-                {
-                    return b.targets == null;
-                }
-                if (b.targets != null && targets.Length == b.targets.Length)
-                {
-                    for (var i = 0; i < targets.Length; i++)
-                    {
-                        if (!targets[i].Equals(b.targets[i])) return false;
-                    }
-                    return true;
-                }
-            }
-
-            return false;
+            // ReSharper disable once BaseObjectEqualsIsObjectEquals
+            return base.Equals(obj);
         }
 
         /// <summary>
         /// Default hash function.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override int GetHashCode()
         {
-            int hash = 13;
-            hash = hash * 7 + attributes.GetHashCode();
-            if (targets != null)
-            {
-                hash = hash * 7 + targets.GetHashCode();
-            }
-            return hash;
+            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
+            return base.GetHashCode();
         }
 
         /// <summary>
@@ -265,47 +238,22 @@ namespace GLTFast.Schema
         /// </summary>
         /// <param name="obj">The object to compare with the current object.</param>
         /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override bool Equals(object obj)
         {
-            //Check for null and compare run-time types.
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            var b = (Attributes)obj;
-            return POSITION == b.POSITION
-                && NORMAL == b.NORMAL
-                && TANGENT == b.TANGENT
-                && TEXCOORD_0 == b.TEXCOORD_0
-                && TEXCOORD_1 == b.TEXCOORD_1
-                && TEXCOORD_2 == b.TEXCOORD_2
-                && TEXCOORD_3 == b.TEXCOORD_3
-                && TEXCOORD_4 == b.TEXCOORD_4
-                && TEXCOORD_5 == b.TEXCOORD_5
-                && TEXCOORD_6 == b.TEXCOORD_6
-                && TEXCOORD_7 == b.TEXCOORD_7
-                && COLOR_0 == b.COLOR_0
-                && JOINTS_0 == b.JOINTS_0
-                && WEIGHTS_0 == b.WEIGHTS_0
-                ;
+            // ReSharper disable once BaseObjectEqualsIsObjectEquals
+            return base.Equals(obj);
         }
 
         /// <summary>
         /// Default hash function.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override int GetHashCode()
         {
-            int hash = 13;
-            hash = hash * 7 + POSITION.GetHashCode();
-            hash = hash * 7 + NORMAL.GetHashCode();
-            hash = hash * 7 + TANGENT.GetHashCode();
-            hash = hash * 7 + TEXCOORD_0.GetHashCode();
-            hash = hash * 7 + TEXCOORD_1.GetHashCode();
-            hash = hash * 7 + COLOR_0.GetHashCode();
-            hash = hash * 7 + JOINTS_0.GetHashCode();
-            hash = hash * 7 + WEIGHTS_0.GetHashCode();
-            return hash;
+            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
+            return base.GetHashCode();
         }
 
         internal void GltfSerialize(JsonWriter writer)
@@ -384,7 +332,6 @@ namespace GLTFast.Schema
     [Serializable]
     public class MorphTarget
     {
-
         // Names are identical to glTF specified property names, that's why
         // inconsistent names are ignored.
         // ReSharper disable InconsistentNaming
@@ -403,31 +350,22 @@ namespace GLTFast.Schema
         /// </summary>
         /// <param name="obj">The object to compare with the current object.</param>
         /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override bool Equals(object obj)
         {
-            //Check for null and compare run-time types.
-            if (obj == null || GetType() != obj.GetType())
-            {
-                return false;
-            }
-            var b = (MorphTarget)obj;
-            return POSITION == b.POSITION
-                && NORMAL == b.NORMAL
-                && TANGENT == b.TANGENT
-                ;
+            // ReSharper disable once BaseObjectEqualsIsObjectEquals
+            return base.Equals(obj);
         }
 
         /// <summary>
         /// Default hash function.
         /// </summary>
         /// <returns>A hash code for the current object.</returns>
+        // TODO: Remove upon next major release. This serves no purpose anymore except keeping the API intact.
         public override int GetHashCode()
         {
-            int hash = 13;
-            hash = hash * 7 + POSITION.GetHashCode();
-            hash = hash * 7 + NORMAL.GetHashCode();
-            hash = hash * 7 + TANGENT.GetHashCode();
-            return hash;
+            // ReSharper disable once BaseObjectGetHashCodeCallInGetHashCode
+            return base.GetHashCode();
         }
 
         internal void GltfSerialize(JsonWriter writer)

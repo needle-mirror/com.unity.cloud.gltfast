@@ -6,6 +6,24 @@ uid: doc-upgrade-guides
 
 These guides will help you upgrade your project to use the latest version of *Unity glTFast*. If you still encounter problems, help us improving this guide and *Unity glTFast* in general by reaching out by raising an issue.
 
+## Repository Structure: Monorepo
+
+The Git repository of *glTFast* used to have the package content only at its root level. Shortly after version 6.8.0 this was changed to a [Monorepo][Monorepo] structure where the package resides in a sub-folder (`/Packages/com.unity.cloud.gltfast`). This was done so that the repository can also host additional content like test projects and assets that improve the development experience. Read the [development guide](development.md) and [Repository Structure](sources.md#repository-structure) for details.
+
+Users who installed *glTFast* via its package identifier/name won't notice a difference, but if you've [installed it via Git URL][GitPackageInstall] (usually for development purpose), you'll need to update the URL to include a `path` parameter like so:
+
+```none
+https://github.com/Unity-Technologies/com.unity.cloud.gltfast.git?path=/Packages/com.unity.cloud.gltfast
+```
+
+You can do this by manually editing the URL in the [project manifest][ProjectManifest].
+
+## Upgrade to 6.0
+
+Use Unity 2020.3.48f1 or newer only.
+
+*GltfAnimation* was renamed to [Animation](xref:GLTFast.Schema.Animation).
+
 ## Unity Fork
 
 With the release of version 5.2.0 the package name and identifier were changed to *Unity glTFast* (`com.unity.cloud.gltfast`) for the following reasons:
@@ -260,10 +278,13 @@ In the future materials can be created before textures are available/downloaded 
 
 [GameObjectInstantiator]: xref:GLTFast.GameObjectInstantiator
 [GameObjectSceneInstance]: xref:GLTFast.GameObjectSceneInstance
+[GitPackageInstall]: https://docs.unity3d.com/Manual/upm-ui-giturl.html
 [gltf-spec-coords]: https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#coordinate-system-and-units
 [GltfAsset]: xref:GLTFast.GltfAsset
 [gltfast3to4]: Images/gltfast3to4.png  "3D scene view showing BoomBoxWithAxes model twice. One with the legacy axis conversion and one with the new orientation"
 [GltfImport]: xref:GLTFast.GltfImport
+[Monorepo]: https://en.wikipedia.org/wiki/Monorepo
+[ProjectManifest]: https://docs.unity3d.com/Manual/upm-git.html
 [IGltfReadable]: xref:GLTFast.IGltfReadable
 [ImgConv]: https://docs.unity3d.com/2021.3/Documentation/ScriptReference/UnityEngine.ImageConversionModule.html
 [OpenUPM]: https://openupm.com/

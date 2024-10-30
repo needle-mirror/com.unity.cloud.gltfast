@@ -2,7 +2,8 @@
 
 You can load a glTF&trade; asset from an URL or a file path.
 
-> Note: glTFs are loaded via [UnityWebRequests](https://docs.unity3d.com/ScriptReference/Networking.UnityWebRequest.html). File paths have to be prefixed with `file://` in the Unity Editor and on certain platforms (e.g. iOS).
+> [!NOTE]
+> By default glTFs are loaded via [UnityWebRequests](https://docs.unity3d.com/ScriptReference/Networking.UnityWebRequest.html). File paths thus have to be prefixed with `file://` in the Unity Editor and on certain platforms (e.g. iOS).
 
 ## Runtime Loading via Component
 
@@ -37,7 +38,8 @@ async void LoadGltfBinaryFromMemory() {
 }
 ```
 
-> Note: Most users want to load self-contained glTF binary files this way, but `LoadGltfBinary` also takes the original URI of glTF file as second parameter, so it can resolve relative URIs.
+> [!TIP]
+> Provide the original URI of glTF-binary file as `uri` parameter to [LoadGltfBinary][GltfImportLoadGltfBinary], so that it is able to resolve relative URIs in non-self-contained glTFs.
 
 ## Customize loading behavior
 
@@ -219,13 +221,16 @@ When loading a glTF file, *Unity glTFast* logs messages of varying severity (err
 - Feed the information into an analytics framework
 - Display details to the users
 
-The provided component `GltfAsset` logs all of those messages to the console by default.
+The [GltfAsset][GltfAsset] component logs all of those messages to the console by default.
 
-You can customize logging by providing an implementation of [`ICodeLogger`][ICodeLogger] to methods like `GltfImport.Load` or `GltfImport.InstantiateMainScene`.
+You can customize logging by providing an implementation of [ICodeLogger][ICodeLogger] to the constructors of [GltfImport][GltfImportCtor] or [GameObjectInstantiator][GameObjectInstantiatorCtor].
 
-There are two common implementations bundled. The `ConsoleLogger`, which logs straight to console (the default) and `CollectingLogger`, which stores messages in a list for users to process.
+> [!IMPORTANT]
+> Not providing an `ICodeLogger` will disable logging altogether, which makes finding the cause of problems hard! Always use a logger like the `ConsoleLogger` during development.
 
-Look into [`ICodeLogger`][ICodeLogger] and [`LogMessages`][LogMessages] for details.
+There are two common implementations bundled. The [ConsoleLogger][ConsoleLogger], which logs straight to console and [CollectingLogger][CollectingLogger], which stores messages in a list for users to process.
+
+Look into [ICodeLogger][ICodeLogger] and [LogMessages][LogMessages] for details.
 
 ### Tune loading performance
 
@@ -290,9 +295,15 @@ When you no longer need a loaded instance of a glTF scene you might want to remo
 
 *Khronos&reg;* is a registered trademark and *glTF&trade;* is a trademark of [The Khronos Group Inc][Khronos].
 
+[CollectingLogger]: xref:GLTFast.Logging.CollectingLogger
+[ConsoleLogger]: xref:GLTFast.Logging.ConsoleLogger
+[GltfAsset]: xref:GLTFast.GltfAsset
 [GltfImport]: xref:GLTFast.GltfImport
+[GltfImportCtor]: xref:GLTFast.GltfImport.#ctor*
 [GltfImportDispose]: xref:GLTFast.GltfImport.Dispose
+[GltfImportLoadGltfBinary]: xref:GLTFast.GltfImportBase.LoadGltfBinary*
 [GameObjectInstantiator]: xref:GLTFast.GameObjectInstantiator
+[GameObjectInstantiatorCtor]: xref:GLTFast.GameObjectInstantiator.#ctor*
 [gltfasset_component]: Images/gltfasset_component.png  "Inspector showing a GltfAsset component added to a GameObject"
 [ICodeLogger]: xref:GLTFast.Logging.ICodeLogger
 [IDownload]: xref:GLTFast.Loading.IDownload

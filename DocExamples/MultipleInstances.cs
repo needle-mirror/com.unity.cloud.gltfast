@@ -1,17 +1,15 @@
 // SPDX-FileCopyrightText: 2024 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-using GLTFast;
-
 #if NEWTONSOFT_JSON
-namespace Samples.Documentation.Manual
+namespace GLTFast.Documentation.Examples
 {
 #region MultipleInstances
     using System;
     using UnityEngine;
     using GltfImport = GLTFast.Newtonsoft.GltfImport;
 
-    public class MultipleInstances : MonoBehaviour
+    class MultipleInstances : MonoBehaviour
     {
         // Path to the gltf asset to be imported
         public string Uri;
