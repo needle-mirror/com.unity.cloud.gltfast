@@ -34,7 +34,7 @@ namespace GLTFast
             int jointsAccessorIndex
         );
         public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream);
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags);
+        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
         public abstract void Dispose();
     }
 
@@ -53,12 +53,12 @@ namespace GLTFast
             Profiler.BeginSample("ScheduleVertexBonesJob");
             Profiler.BeginSample("AllocateNativeArray");
 
-            buffers.GetAccessor(weightsAccessorIndex, out var weightsAcc, out var weightsData, out var weightsByteStride);
+            buffers.GetAccessorAndData(weightsAccessorIndex, out var weightsAcc, out var weightsData, out var weightsByteStride);
             if (weightsAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "bone weights");
             }
-            m_Data = new NativeArray<VBones>(weightsAcc.count, VertexBufferConfigBase.defaultAllocator);
+            m_Data = new NativeArray<VBones>(weightsAcc.count, VertexBufferGeneratorBase.defaultAllocator);
             var vDataPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(m_Data);
             Profiler.EndSample();
 
@@ -86,7 +86,7 @@ namespace GLTFast
             }
 
             {
-                buffers.GetAccessor(jointsAccessorIndex, out var jointsAcc, out var jointsData, out var jointsByteStride);
+                buffers.GetAccessorAndData(jointsAccessorIndex, out var jointsAcc, out var jointsData, out var jointsByteStride);
                 if (jointsAcc.IsSparse)
                 {
                     m_Logger?.Error(LogCode.SparseAccessor, "bone joints");
@@ -152,7 +152,7 @@ namespace GLTFast
             dst[offset + 1] = new VertexAttributeDescriptor(VertexAttribute.BlendIndices, VertexAttributeFormat.UInt32, 4, stream);
         }
 
-        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
         {
             Profiler.BeginSample("ApplyBones");
             msh.SetVertexBufferData(m_Data, 0, 0, m_Data.Length, stream, flags);

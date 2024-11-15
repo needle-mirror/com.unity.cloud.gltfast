@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace GLTFast
 {
 
-    abstract class PrimitiveCreateContextBase
+    abstract class MeshResultGeneratorBase
     {
 
         public const MeshUpdateFlags defaultMeshUpdateFlags =
@@ -24,7 +24,7 @@ namespace GLTFast
 
         public abstract bool IsCompleted { get; }
 
-        protected PrimitiveCreateContextBase(
+        protected MeshResultGeneratorBase(
             int meshIndex,
             int primitiveIndex,
             int subMeshCount,
@@ -42,7 +42,7 @@ namespace GLTFast
             m_Materials[subMesh] = materialIndex;
         }
 
-        public MorphTargetsContext morphTargetsContext;
+        public MorphTargetsGenerator morphTargetsGenerator;
 
         public abstract Task<MeshResult?> CreatePrimitive();
     }

@@ -18,19 +18,7 @@ namespace GLTFast
     using Logging;
     using Schema;
 
-    [System.Flags]
-    enum MainBufferType
-    {
-        None = 0x0,
-        Position = 0x1,
-        Normal = 0x2,
-        Tangent = 0x4,
-
-        PosNorm = 0x3,
-        PosNormTan = 0x7,
-    }
-
-    abstract class VertexBufferConfigBase
+    abstract class VertexBufferGeneratorBase
     {
 
         public const Allocator defaultAllocator = Allocator.Persistent;
@@ -43,7 +31,7 @@ namespace GLTFast
 
         public Bounds? Bounds { get; protected set; }
 
-        protected VertexBufferConfigBase(ICodeLogger logger)
+        protected VertexBufferGeneratorBase(ICodeLogger logger)
         {
             m_Logger = logger;
         }
@@ -58,7 +46,7 @@ namespace GLTFast
             int weightsAccessorIndex,
             int jointsAccessorIndex
             );
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags);
+        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
         public abstract int VertexCount { get; }
         public abstract void Dispose();
 

@@ -19,11 +19,11 @@ namespace GLTFast
 #endif
     using Logging;
 
-    class VertexBufferConfig<VType> :
-        VertexBufferConfigBase
-        where VType : struct
+    class VertexBufferGenerator<TMainBuffer> :
+        VertexBufferGeneratorBase
+        where TMainBuffer : struct
     {
-        NativeArray<VType> m_Data;
+        NativeArray<TMainBuffer> m_Data;
 
         bool m_HasNormals;
         bool m_HasTangents;
@@ -46,7 +46,7 @@ namespace GLTFast
             }
         }
 
-        public VertexBufferConfig(ICodeLogger logger) : base(logger) { }
+        public VertexBufferGenerator(ICodeLogger logger) : base(logger) { }
 
         public override unsafe JobHandle? ScheduleVertexJobs(
             IGltfBuffers buffers,
@@ -59,11 +59,11 @@ namespace GLTFast
             int jointsAccessorIndex
         )
         {
-            buffers.GetAccessor(positionAccessorIndex, out var posAcc, out var posData, out var posByteStride);
+            buffers.GetAccessorAndData(positionAccessorIndex, out var posAcc, out var posData, out var posByteStride);
 
             Profiler.BeginSample("ScheduleVertexJobs");
             Profiler.BeginSample("AllocateNativeArray");
-            m_Data = new NativeArray<VType>(posAcc.count, defaultAllocator);
+            m_Data = new NativeArray<TMainBuffer>(posAcc.count, defaultAllocator);
             var vDataPtr = (byte*)m_Data.GetUnsafeReadOnlyPtr();
             Profiler.EndSample();
 
@@ -205,7 +205,7 @@ namespace GLTFast
 
             if (normalAccessorIndex >= 0)
             {
-                buffers.GetAccessor(normalAccessorIndex, out var nrmAcc, out var input, out var inputByteStride);
+                buffers.GetAccessorAndData(normalAccessorIndex, out var nrmAcc, out var input, out var inputByteStride);
                 if (nrmAcc.IsSparse)
                 {
                     m_Logger?.Error(LogCode.SparseAccessor, "normals");
@@ -234,7 +234,7 @@ namespace GLTFast
 
             if (tangentAccessorIndex >= 0)
             {
-                buffers.GetAccessor(tangentAccessorIndex, out var tanAcc, out var input, out var inputByteStride);
+                buffers.GetAccessorAndData(tangentAccessorIndex, out var tanAcc, out var input, out var inputByteStride);
                 if (tanAcc.IsSparse)
                 {
                     m_Logger?.Error(LogCode.SparseAccessor, "tangents");
@@ -359,7 +359,7 @@ namespace GLTFast
             }
         }
 
-        public override void ApplyOnMesh(Mesh msh, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(Mesh msh, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
         {
 
             Profiler.BeginSample("ApplyOnMesh");

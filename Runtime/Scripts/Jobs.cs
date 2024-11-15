@@ -299,12 +299,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct CreateIndicesInt32Job : IJobParallelFor
+    struct CreateIndicesInt32Job : IJobParallelFor
     {
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -313,12 +311,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct CreateIndicesInt32FlippedJob : IJobParallelFor
+    struct CreateIndicesInt32FlippedJob : IJobParallelFor
     {
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -327,12 +323,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct CreateIndicesForTriangleStripJob : IJobParallelFor
+    struct CreateIndicesForTriangleStripJob : IJobParallelFor
     {
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -354,12 +348,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct CreateIndicesForTriangleFanJob : IJobParallelFor
+    struct CreateIndicesForTriangleFanJob : IJobParallelFor
     {
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -380,15 +372,13 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct RecalculateIndicesForTriangleStripJob : IJobParallelFor
+    struct RecalculateIndicesForTriangleStripJob : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* input;
+        public NativeArray<int> input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly, NativeDisableParallelForRestriction]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -406,15 +396,13 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct RecalculateIndicesForTriangleFanJob : IJobParallelFor
+    struct RecalculateIndicesForTriangleFanJob : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* input;
+        public NativeArray<int> input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly, NativeDisableParallelForRestriction]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -430,6 +418,7 @@ namespace GLTFast.Jobs
             result[triangleIndex + 2] = 0;
         }
     }
+
     [BurstCompile]
     unsafe struct ConvertIndicesUInt8ToInt32Job : IJobParallelFor
     {
@@ -438,9 +427,8 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -456,9 +444,8 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int3* result;
+        [WriteOnly]
+        public NativeArray<int3> result;
 
         public void Execute(int i)
         {
@@ -473,14 +460,12 @@ namespace GLTFast.Jobs
     [BurstCompile]
     unsafe struct ConvertIndicesUInt16ToInt32FlippedJob : IJobParallelFor
     {
-
         [ReadOnly]
         [NativeDisableUnsafePtrRestriction]
         public ushort* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int3* result;
+        [WriteOnly]
+        public NativeArray<int3> result;
 
         public void Execute(int i)
         {
@@ -495,14 +480,12 @@ namespace GLTFast.Jobs
     [BurstCompile]
     unsafe struct ConvertIndicesUInt16ToInt32Job : IJobParallelFor
     {
-
         [ReadOnly]
         [NativeDisableUnsafePtrRestriction]
         public ushort* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -513,14 +496,12 @@ namespace GLTFast.Jobs
     [BurstCompile]
     unsafe struct ConvertIndicesUInt32ToInt32Job : IJobParallelFor
     {
-
         [ReadOnly]
         [NativeDisableUnsafePtrRestriction]
         public uint* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int* result;
+        [WriteOnly]
+        public NativeArray<int> result;
 
         public void Execute(int i)
         {
@@ -531,14 +512,12 @@ namespace GLTFast.Jobs
     [BurstCompile]
     unsafe struct ConvertIndicesUInt32ToInt32FlippedJob : IJobParallelFor
     {
-
         [ReadOnly]
         [NativeDisableUnsafePtrRestriction]
         public uint* input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public int3* result;
+        [WriteOnly]
+        public NativeArray<int3> result;
 
         public void Execute(int i)
         {

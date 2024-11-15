@@ -8,6 +8,7 @@ As prerequisites you'll need to [install](installation.md) a version of Unity&re
 - [Test Projects](test-project-setup.md)
   - [Provided Projects](test-project-setup.md#test-projects)
   - [Custom Project](test-project-setup.md#setup-a-custom-project)
+- [Load glTF files](test-open-file.md)
 - [Run Tests](tests.md)
 - [Contribute](contributing.md)
 

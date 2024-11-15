@@ -15,7 +15,7 @@ using Mesh = UnityEngine.Mesh;
 
 namespace GLTFast {
 
-    class PrimitiveDracoCreateContext : PrimitiveCreateContextBase {
+    class DracoMeshResultGenerator : MeshResultGeneratorBase {
 
         Task<Mesh> m_DracoTask;
         Bounds? m_Bounds;
@@ -25,7 +25,7 @@ namespace GLTFast {
 
         public override bool IsCompleted => m_DracoTask!=null && m_DracoTask.IsCompleted;
 
-        public PrimitiveDracoCreateContext(
+        public DracoMeshResultGenerator(
             int meshIndex,
             int primitiveIndex,
             int subMeshCount,
@@ -52,7 +52,7 @@ namespace GLTFast {
             {
                 flags |= DecodeSettings.RequireNormals;
             }
-            if (morphTargetsContext != null)
+            if (morphTargetsGenerator != null)
             {
                 flags |= DecodeSettings.ForceUnityVertexLayout;
             }
@@ -88,8 +88,8 @@ namespace GLTFast {
                 mesh.RecalculateBounds();
             }
 
-            if (morphTargetsContext != null) {
-                await morphTargetsContext.ApplyOnMeshAndDispose(mesh);
+            if (morphTargetsGenerator != null) {
+                await morphTargetsGenerator.ApplyOnMeshAndDispose(mesh);
             }
 
 #if GLTFAST_KEEP_MESH_DATA

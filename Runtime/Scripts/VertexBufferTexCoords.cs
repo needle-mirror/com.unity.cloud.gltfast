@@ -28,7 +28,7 @@ namespace GLTFast
         public int UVSetCount { get; protected set; }
         public abstract bool ScheduleVertexUVJobs(IGltfBuffers buffers, int[] uvAccessorIndices, int vertexCount, NativeSlice<JobHandle> handles);
         public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream);
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags);
+        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
         public abstract void Dispose();
     }
 
@@ -42,7 +42,7 @@ namespace GLTFast
         {
             Profiler.BeginSample("ScheduleVertexUVJobs");
             Profiler.BeginSample("AllocateNativeArray");
-            m_Data = new NativeArray<T>(vertexCount, VertexBufferConfigBase.defaultAllocator);
+            m_Data = new NativeArray<T>(vertexCount, VertexBufferGeneratorBase.defaultAllocator);
             var vDataPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(m_Data);
             Profiler.EndSample();
             UVSetCount = uvAccessorIndices.Length;
@@ -51,7 +51,7 @@ namespace GLTFast
             for (int i = 0; i < uvAccessorIndices.Length; i++)
             {
                 var accIndex = uvAccessorIndices[i];
-                buffers.GetAccessor(accIndex, out var uvAcc, out var data, out var byteStride);
+                buffers.GetAccessorAndData(accIndex, out var uvAcc, out var data, out var byteStride);
                 if (uvAcc.IsSparse)
                 {
                     m_Logger?.Error(LogCode.SparseAccessor, "UVs");
@@ -91,7 +91,7 @@ namespace GLTFast
             }
         }
 
-        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
         {
             Profiler.BeginSample("ApplyUVs");
             msh.SetVertexBufferData(m_Data, 0, 0, m_Data.Length, stream, flags);

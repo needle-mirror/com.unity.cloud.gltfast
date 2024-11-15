@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.9.1] - 2024-11-15
+
+### Added
+- (Test) `OpenGltfScene` with open glTF file dialog for convenient testing.
+- (Test) Tests for C# jobs that calculate or re-order indices.
+- Third party notices.
+
+### Changed
+- Node name is assigned earlier during instantiation, enabling easier node identification by name (partially fixes [#724](https://github.com/atteneder/glTFast/issues/724)).
+- (Test) Updated test project dependencies.
+- (CI) Migrated code coverage.
+- Code refactoring
+  - Flattened `GltfImportBase.Prepare` by extracting many large code blocks into dedicated methods.
+  - Improved class/field naming. It's now less deceptive and more uniform.
+  - Using `NativeArray` directly/only instead of `AccessorData` classes/managed arrays. With this change `NativeArrays` are used for index buffers as well which reduces the amount of managed memory allocated.
+- Facilitated use of safer NativeCollections in C# jobs that calculate or re-order indices instead of `unsafe` / pointers.
+
+### Fixed
+- Made sure that mesh primitives of different drawmode (topology) are not mixed up.
+
 ## [6.9.0] - 2024-10-30
 
 ### Added

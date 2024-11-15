@@ -19,7 +19,7 @@ namespace GLTFast
     {
         public abstract bool ScheduleVertexColorJob(IGltfBuffers buffers, int colorAccessorIndex, NativeSlice<JobHandle> handles);
         public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream);
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags);
+        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
         public abstract void Dispose();
 
         protected ICodeLogger m_Logger;
@@ -44,12 +44,12 @@ namespace GLTFast
         {
             Profiler.BeginSample("ScheduleVertexColorJob");
             Profiler.BeginSample("AllocateNativeArray");
-            buffers.GetAccessor(colorAccessorIndex, out var colorAcc, out var data, out var byteStride);
+            buffers.GetAccessorAndData(colorAccessorIndex, out var colorAcc, out var data, out var byteStride);
             if (colorAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "color");
             }
-            m_Data = new NativeArray<float4>(colorAcc.count, VertexBufferConfigBase.defaultAllocator);
+            m_Data = new NativeArray<float4>(colorAcc.count, VertexBufferGeneratorBase.defaultAllocator);
             Profiler.EndSample();
 
             var h = GetColors32Job(
@@ -77,7 +77,7 @@ namespace GLTFast
             dst[offset] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, stream);
         }
 
-        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = PrimitiveCreateContextBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
         {
             Profiler.BeginSample("ApplyUVs");
             msh.SetVertexBufferData(m_Data, 0, 0, m_Data.Length, stream, flags);

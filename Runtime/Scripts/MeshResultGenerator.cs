@@ -3,7 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-
+using Unity.Collections;
 using Unity.Jobs;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
@@ -12,20 +12,18 @@ using UnityEngine;
 namespace GLTFast
 {
 
-    class PrimitiveCreateContext : PrimitiveCreateContextBase
+    class MeshResultGenerator : MeshResultGeneratorBase
     {
 
-        public VertexBufferConfigBase vertexData;
+        public VertexBufferGeneratorBase vertexData;
 
         public JobHandle jobHandle;
-        int[][] m_Indices;
+        NativeArray<int>[] m_Indices;
         int[] m_PrimitiveIndices;
-
-        public GCHandle calculatedIndicesHandle;
 
         public MeshTopology topology;
 
-        public PrimitiveCreateContext(
+        public MeshResultGenerator(
             int meshIndex,
             int primitiveIndex,
             int subMeshCount,
@@ -33,11 +31,11 @@ namespace GLTFast
             )
             : base(meshIndex, primitiveIndex, subMeshCount, meshName)
         {
-            m_Indices = new int[subMeshCount][];
+            m_Indices = new NativeArray<int>[subMeshCount];
             m_PrimitiveIndices = new int[subMeshCount];
         }
 
-        public void SetIndices(int subMesh, int[] indices)
+        public void SetIndices(int subMesh, NativeArray<int> indices)
         {
             m_Indices[subMesh] = indices;
         }
@@ -144,26 +142,14 @@ namespace GLTFast
             // Profiler.EndSample();
 #endif
 
-            if (morphTargetsContext != null)
+            if (morphTargetsGenerator != null)
             {
-                await morphTargetsContext.ApplyOnMeshAndDispose(msh);
+                await morphTargetsGenerator.ApplyOnMeshAndDispose(msh);
             }
-
-            Profiler.BeginSample("Dispose");
-            Dispose();
-            Profiler.EndSample();
 
             Profiler.EndSample();
 
             return new MeshResult(MeshIndex, m_PrimitiveIndices, m_Materials, msh);
-        }
-
-        void Dispose()
-        {
-            if (calculatedIndicesHandle.IsAllocated)
-            {
-                calculatedIndicesHandle.Free();
-            }
         }
     }
 }

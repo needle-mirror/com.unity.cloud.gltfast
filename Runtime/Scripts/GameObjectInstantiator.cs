@@ -583,7 +583,7 @@ namespace GLTFast
         /// <summary>
         /// Provides information for when a mesh was added to a node GameObject
         /// </summary>
-        /// <param name="gameObject">GameObject that holds the Msh.</param>
+        /// <param name="gameObject">GameObject that holds the Mesh.</param>
         /// <param name="nodeIndex">Index of the node</param>
         /// <param name="meshName">Mesh's name</param>
         /// <param name="meshResult">The converted Mesh</param>

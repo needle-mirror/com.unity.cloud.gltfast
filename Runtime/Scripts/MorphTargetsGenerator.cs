@@ -15,7 +15,7 @@ using GLTFast.Logging;
 namespace GLTFast
 {
 
-    class MorphTargetsContext
+    class MorphTargetsGenerator
     {
         MorphTargetContext[] m_Contexts;
         NativeArray<JobHandle> m_Handles;
@@ -23,10 +23,10 @@ namespace GLTFast
         string[] m_MeshTargetNames;
         IDeferAgent m_DeferAgent;
 
-        public MorphTargetsContext(int morphTargetCount, string[] meshTargetNames, IDeferAgent deferAgent)
+        public MorphTargetsGenerator(int morphTargetCount, string[] meshTargetNames, IDeferAgent deferAgent)
         {
             m_Contexts = new MorphTargetContext[morphTargetCount];
-            m_Handles = new NativeArray<JobHandle>(morphTargetCount, VertexBufferConfigBase.defaultAllocator);
+            m_Handles = new NativeArray<JobHandle>(morphTargetCount, VertexBufferGeneratorBase.defaultAllocator);
             m_CurrentIndex = 0;
             this.m_MeshTargetNames = meshTargetNames;
             this.m_DeferAgent = deferAgent;
@@ -102,7 +102,7 @@ namespace GLTFast
         {
             Profiler.BeginSample("ScheduleMorphTargetJobs");
 
-            buffers.GetAccessor(positionAccessorIndex, out var posAcc, out var posData, out var posByteStride);
+            buffers.GetAccessorAndData(positionAccessorIndex, out var posAcc, out var posData, out var posByteStride);
 
             m_Positions = new Vector3[posAcc.count];
             m_PositionsHandle = GCHandle.Alloc(m_Positions, GCHandleType.Pinned);
@@ -121,7 +121,7 @@ namespace GLTFast
             {
                 m_Normals = new Vector3[posAcc.count];
                 m_NormalsHandle = GCHandle.Alloc(m_Normals, GCHandleType.Pinned);
-                buffers.GetAccessor(normalAccessorIndex, out nrmAcc, out nrmInput, out nrmInputByteStride);
+                buffers.GetAccessorAndData(normalAccessorIndex, out nrmAcc, out nrmInput, out nrmInputByteStride);
                 if (nrmAcc.IsSparse && nrmAcc.bufferView >= 0)
                 {
                     jobCount += 2;
@@ -140,7 +140,7 @@ namespace GLTFast
             {
                 m_Tangents = new Vector3[posAcc.count];
                 m_TangentsHandle = GCHandle.Alloc(m_Tangents, GCHandleType.Pinned);
-                buffers.GetAccessor(normalAccessorIndex, out tanAcc, out tanInput, out tanInputByteStride);
+                buffers.GetAccessorAndData(normalAccessorIndex, out tanAcc, out tanInput, out tanInputByteStride);
                 if (tanAcc.IsSparse && tanAcc.bufferView >= 0)
                 {
                     jobCount += 2;
@@ -151,7 +151,7 @@ namespace GLTFast
                 }
             }
 
-            NativeArray<JobHandle> handles = new NativeArray<JobHandle>(jobCount, VertexBufferConfigBase.defaultAllocator);
+            NativeArray<JobHandle> handles = new NativeArray<JobHandle>(jobCount, VertexBufferGeneratorBase.defaultAllocator);
             var handleIndex = 0;
 
             fixed (void* dest = &(m_Positions[0]))
@@ -159,7 +159,7 @@ namespace GLTFast
                 JobHandle? h = null;
                 if (posData != null)
                 {
-                    h = VertexBufferConfigBase.GetVector3Job(
+                    h = VertexBufferGeneratorBase.GetVector3Job(
                         posData,
                         posAcc.count,
                         posAcc.componentType,
@@ -184,7 +184,7 @@ namespace GLTFast
                 {
                     buffers.GetAccessorSparseIndices(posAcc.Sparse.Indices, out var posIndexData);
                     buffers.GetAccessorSparseValues(posAcc.Sparse.Values, out var posValueData);
-                    var sparseJobHandle = VertexBufferConfigBase.GetVector3SparseJob(
+                    var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                         posIndexData,
                         posValueData,
                         posAcc.Sparse.count,
@@ -215,7 +215,7 @@ namespace GLTFast
                     JobHandle? h = null;
                     if (nrmAcc.bufferView >= 0)
                     {
-                        h = VertexBufferConfigBase.GetVector3Job(
+                        h = VertexBufferGeneratorBase.GetVector3Job(
                             nrmInput,
                             nrmAcc.count,
                             nrmAcc.componentType,
@@ -240,7 +240,7 @@ namespace GLTFast
                     {
                         buffers.GetAccessorSparseIndices(nrmAcc.Sparse.Indices, out var indexData);
                         buffers.GetAccessorSparseValues(nrmAcc.Sparse.Values, out var valueData);
-                        var sparseJobHandle = VertexBufferConfigBase.GetVector3SparseJob(
+                        var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                             indexData,
                             valueData,
                             nrmAcc.Sparse.count,
@@ -272,7 +272,7 @@ namespace GLTFast
                     JobHandle? h = null;
                     if (tanAcc.bufferView >= 0)
                     {
-                        h = VertexBufferConfigBase.GetVector3Job(
+                        h = VertexBufferGeneratorBase.GetVector3Job(
                             tanInput,
                             tanAcc.count,
                             tanAcc.componentType,
@@ -297,7 +297,7 @@ namespace GLTFast
                     {
                         buffers.GetAccessorSparseIndices(tanAcc.Sparse.Indices, out var indexData);
                         buffers.GetAccessorSparseValues(tanAcc.Sparse.Values, out var valueData);
-                        var sparseJobHandle = VertexBufferConfigBase.GetVector3SparseJob(
+                        var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                             indexData,
                             valueData,
                             tanAcc.Sparse.count,

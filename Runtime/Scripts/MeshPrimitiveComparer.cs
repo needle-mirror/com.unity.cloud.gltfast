@@ -21,7 +21,8 @@ namespace GLTFast
             if (x is null) return false;
             if (y is null) return false;
 
-            return Equals(x.attributes, y.attributes)
+            return x.mode == y.mode
+                && Equals(x.attributes, y.attributes)
                 && Equals(x.targets, y.targets);
         }
 
@@ -29,11 +30,13 @@ namespace GLTFast
         {
 #if NET_STANDARD
             return HashCode.Combine(
+                (int)obj.mode,
                 GetHashCode(obj.attributes),
                 GetHashCode(obj.targets)
                 );
 #else
             var hash = 13;
+            hash = hash * 31 + (int)obj.mode;
             hash = hash * 31 + GetHashCode(obj.attributes);
             hash = hash * 31 + GetHashCode(obj.targets);
             return hash;
