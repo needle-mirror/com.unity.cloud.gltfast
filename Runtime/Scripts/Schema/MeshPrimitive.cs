@@ -256,6 +256,73 @@ namespace GLTFast.Schema
             return base.GetHashCode();
         }
 
+        /// <summary>
+        /// Calculates the texture coordinate set quantity.
+        /// </summary>
+        /// <returns>Texture coordinate set quantity.</returns>
+        public int GetTexCoordsCount()
+        {
+            if (TEXCOORD_0 < 0) return 0;
+            if (TEXCOORD_1 < 0) return 1;
+            if (TEXCOORD_2 < 0) return 2;
+            if (TEXCOORD_3 < 0) return 3;
+            if (TEXCOORD_4 < 0) return 4;
+            if (TEXCOORD_5 < 0) return 5;
+            if (TEXCOORD_6 < 0) return 6;
+            if (TEXCOORD_7 < 0) return 7;
+            return TEXCOORD_8 < 0 ? 8 : 9;
+        }
+
+        /// <summary>
+        /// Tries to consolidate all `TEXCOORD_*` accessor fields into a single array.
+        /// </summary>
+        /// <param name="uvAccessors">Resulting array of accessor indices.</param>
+        /// <param name="limitExceeded">If true, the glTF has more UV sets than glTFast supports.</param>
+        /// <returns>True if there's one or more UV sets and the result is valid. False otherwise.</returns>
+        public bool TryGetAllUVAccessors(out int[] uvAccessors, out bool limitExceeded)
+        {
+            if (TEXCOORD_0 >= 0)
+            {
+                var uvCount = GetTexCoordsCount();
+                uvAccessors = new int[uvCount];
+                uvAccessors[0] = TEXCOORD_0;
+                if (TEXCOORD_1 >= 0)
+                {
+                    uvAccessors[1] = TEXCOORD_1;
+                }
+                if (TEXCOORD_2 >= 0)
+                {
+                    uvAccessors[2] = TEXCOORD_2;
+                }
+                if (TEXCOORD_3 >= 0)
+                {
+                    uvAccessors[3] = TEXCOORD_3;
+                }
+                if (TEXCOORD_4 >= 0)
+                {
+                    uvAccessors[4] = TEXCOORD_4;
+                }
+                if (TEXCOORD_5 >= 0)
+                {
+                    uvAccessors[5] = TEXCOORD_5;
+                }
+                if (TEXCOORD_6 >= 0)
+                {
+                    uvAccessors[6] = TEXCOORD_6;
+                }
+                if (TEXCOORD_7 >= 0)
+                {
+                    uvAccessors[7] = TEXCOORD_7;
+                }
+                limitExceeded = TEXCOORD_8 >= 0;
+                return true;
+            }
+
+            uvAccessors = null;
+            limitExceeded = false;
+            return false;
+        }
+
         internal void GltfSerialize(JsonWriter writer)
         {
             writer.AddObject();

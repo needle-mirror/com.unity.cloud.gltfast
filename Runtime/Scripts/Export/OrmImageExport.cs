@@ -178,7 +178,7 @@ namespace GLTFast.Export
         {
             if (m_Texture != null || m_OccTexture != null || m_SmoothnessTexture != null)
             {
-                imageData = EncodeOrmTexture(m_Texture, m_OccTexture, m_SmoothnessTexture, ImageFormat);
+                imageData = EncodeOrmTexture(m_Texture, m_OccTexture, m_SmoothnessTexture, ImageFormat, JpgQuality);
                 return true;
             }
             imageData = null;
@@ -192,12 +192,14 @@ namespace GLTFast.Export
         /// <param name="occlusionTexture">Occlusion texture</param>
         /// <param name="smoothnessTexture">Smoothness texture</param>
         /// <param name="format">Export image format</param>
+        /// <param name="jpgQuality">[1-100] quality for JPG images</param>
         /// <returns></returns>
         static byte[] EncodeOrmTexture(
             Texture2D metalGlossTexture,
             Texture2D occlusionTexture,
             Texture2D smoothnessTexture,
-            ImageFormat format
+            ImageFormat format,
+            int jpgQuality
         )
         {
 #if UNITY_IMAGECONVERSION
@@ -277,7 +279,7 @@ namespace GLTFast.Export
 
             var imageData = format == ImageFormat.Png
                 ? exportTexture.EncodeToPNG()
-                : exportTexture.EncodeToJPG(60);
+                : exportTexture.EncodeToJPG(jpgQuality);
 
             // Release temporary texture
 #if UNITY_EDITOR

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -11,44 +12,47 @@ using UnityEngine.Rendering;
 
 namespace GLTFast
 {
-#if BURST
-    using Unity.Mathematics;
-#endif
     using Jobs;
     using Logging;
     using Schema;
 
-    abstract class VertexBufferGeneratorBase
+    abstract class VertexBufferGeneratorBase : IDisposable
     {
 
         public const Allocator defaultAllocator = Allocator.Persistent;
+
+        protected Attributes[] m_Attributes;
+        protected int m_AttributeCount;
 
         public bool calculateNormals = false;
         public bool calculateTangents = false;
 
         protected VertexAttributeDescriptor[] m_Descriptors;
-        protected ICodeLogger m_Logger;
+        protected GltfImportBase m_GltfImport;
 
-        public Bounds? Bounds { get; protected set; }
-
-        protected VertexBufferGeneratorBase(ICodeLogger logger)
+        protected VertexBufferGeneratorBase(int primitiveCount, GltfImportBase gltfImport)
         {
-            m_Logger = logger;
+            m_Attributes = new Attributes[primitiveCount];
+            m_GltfImport = gltfImport;
         }
 
-        public abstract JobHandle? ScheduleVertexJobs(
-            IGltfBuffers buffers,
-            int positionAccessorIndex,
-            int normalAccessorIndex,
-            int tangentAccessorIndex,
-            int[] uvAccessorIndices,
-            int colorAccessorIndex,
-            int weightsAccessorIndex,
-            int jointsAccessorIndex
-            );
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
+        public abstract void AddPrimitive(Attributes att);
+        public abstract void Initialize();
+        public abstract JobHandle? CreateVertexBuffer();
+
+        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags);
         public abstract int VertexCount { get; }
-        public abstract void Dispose();
+        public abstract int[] VertexIntervals { get; protected set; }
+        public abstract void GetVertexRange(int subMesh, out int baseVertex, out int vertexCount);
+        public abstract bool TryGetBounds(int subMesh, out Bounds bounds);
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected abstract void Dispose(bool disposing);
 
         /// <summary>
         /// Schedules a job that converts input data into float3 arrays.
@@ -284,7 +288,7 @@ namespace GLTFast
                         break;
                     }
                 default:
-                    m_Logger?.Error(LogCode.TypeUnsupported, "Tangent", inputType.ToString());
+                    m_GltfImport.Logger?.Error(LogCode.TypeUnsupported, "Tangent", inputType.ToString());
                     jobHandle = null;
                     break;
             }
@@ -310,7 +314,7 @@ namespace GLTFast
             {
                 indexBuffer = (ushort*)indexBuffer,
                 indexConverter = CachedFunction.GetIndexConverter(indexType),
-                inputByteStride = 3 * Accessor.GetComponentTypeSize(valueType),
+                inputByteStride = 3 * AccessorBase.GetComponentTypeSize(valueType),
                 input = valueBuffer,
                 valueConverter = CachedFunction.GetPositionConverter(valueType, normalized),
                 outputByteStride = outputByteStride,

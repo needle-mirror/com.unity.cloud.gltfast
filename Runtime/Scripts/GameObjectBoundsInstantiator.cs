@@ -46,7 +46,7 @@ namespace GLTFast
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         )
         {
             base.AddPrimitive(
@@ -56,7 +56,7 @@ namespace GLTFast
                 joints,
                 rootJoint,
                 morphTargetWeights,
-                primitiveNumeration
+                meshNumeration
             );
 
             if (m_NodeBounds != null)

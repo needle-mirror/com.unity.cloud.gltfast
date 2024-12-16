@@ -166,6 +166,12 @@ namespace GLTFast
             {
                 Destroy(child.gameObject);
             }
+#if UNITY_ANIMATION
+            if (SceneInstance?.LegacyAnimation != null)
+            {
+                Destroy(SceneInstance.LegacyAnimation);
+            }
+#endif
             SceneInstance = null;
         }
     }

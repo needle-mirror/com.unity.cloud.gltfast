@@ -3,46 +3,79 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using GLTFast.Schema;
-using UnityEngine;
 
 namespace GLTFast
 {
-    /// <summary>
-    /// Compares Mesh Primitives based on their attributes and morph targets only.
-    /// This is practical when clustering primitives of a mesh together,
-    /// that end up in a single Unity Mesh.
-    /// </summary>
-    class MeshPrimitiveComparer : IEqualityComparer<MeshPrimitiveBase>
+    class MeshComparer
+        : IEqualityComparer<MeshPrimitiveBase>
+        , IEqualityComparer<IReadOnlyList<MeshPrimitiveBase>>
     {
+        public bool Equals(IReadOnlyList<MeshPrimitiveBase> x, IReadOnlyList<MeshPrimitiveBase> y)
+        {
+            if (ReferenceEquals(x, y)) return true;
+            if (x is null) return false;
+            if (y is null) return false;
+            if (x.Count != y.Count) return false;
+            for (var index = 0; index < x.Count; index++)
+            {
+                if (!Equals(x[index], y[index]))
+                    return false;
+            }
+            return true;
+        }
+
+        public int GetHashCode(IReadOnlyList<MeshPrimitiveBase> obj)
+        {
+#if NET_STANDARD
+            var hashCode = new HashCode();
+            foreach (var primitive in obj)
+            {
+                hashCode.Add(GetHashCode(primitive));
+            }
+            return hashCode.ToHashCode();
+#else
+            var hash = 17;
+            foreach (var primitive in obj)
+            {
+                hash = hash * 31 + GetHashCode(primitive);
+            }
+            return hash;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(MeshPrimitiveBase x, MeshPrimitiveBase y)
         {
             if (ReferenceEquals(x, y)) return true;
             if (x is null) return false;
             if (y is null) return false;
-
-            return x.mode == y.mode
+            if (x.GetType() != y.GetType()) return false;
+            return x.indices == y.indices
                 && Equals(x.attributes, y.attributes)
                 && Equals(x.targets, y.targets);
         }
 
-        public int GetHashCode(MeshPrimitiveBase obj)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetHashCode(MeshPrimitiveBase primitive)
         {
 #if NET_STANDARD
             return HashCode.Combine(
-                (int)obj.mode,
-                GetHashCode(obj.attributes),
-                GetHashCode(obj.targets)
-                );
+                primitive.indices,
+                GetHashCode(primitive.attributes),
+                GetHashCode(primitive.targets)
+            );
 #else
-            var hash = 13;
-            hash = hash * 31 + (int)obj.mode;
-            hash = hash * 31 + GetHashCode(obj.attributes);
-            hash = hash * 31 + GetHashCode(obj.targets);
+            var hash = 17;
+            hash = hash * 31 + primitive.indices;
+            hash = hash * 31 + GetHashCode(primitive.attributes);
+            hash = hash * 31 + GetHashCode(primitive.targets);
             return hash;
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int GetHashCode(Attributes x)
         {
             if (x == null) return 0;
@@ -83,6 +116,7 @@ namespace GLTFast
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static int GetHashCode(MorphTarget[] x)
         {
             if (x == null) return 0;
@@ -116,6 +150,7 @@ namespace GLTFast
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Equals(MorphTarget[] x, MorphTarget[] y)
         {
             if (ReferenceEquals(x, y)) return true;
@@ -129,6 +164,7 @@ namespace GLTFast
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Equals(MorphTarget x, MorphTarget y)
         {
             if (ReferenceEquals(x, y)) return true;
@@ -138,6 +174,7 @@ namespace GLTFast
                 && x.TANGENT == y.TANGENT;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool Equals(Attributes x, Attributes y)
         {
             if (ReferenceEquals(x, y)) return true;

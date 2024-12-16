@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -11,53 +12,43 @@ using UnityEngine.Rendering;
 
 namespace GLTFast
 {
-
     using Logging;
     using Schema;
 
-    abstract class VertexBufferColorsBase
+    sealed class VertexBufferColors : IDisposable
     {
-        public abstract bool ScheduleVertexColorJob(IGltfBuffers buffers, int colorAccessorIndex, NativeSlice<JobHandle> handles);
-        public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream);
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
-        public abstract void Dispose();
-
-        protected ICodeLogger m_Logger;
-
-        protected VertexBufferColorsBase(ICodeLogger logger)
-        {
-            m_Logger = logger;
-        }
-    }
-
-    class VertexBufferColors : VertexBufferColorsBase
-    {
+        readonly ICodeLogger m_Logger;
 
         NativeArray<float4> m_Data;
 
-        public VertexBufferColors(ICodeLogger logger = null)
-            : base(logger)
+        public VertexBufferColors(int vertexCount, ICodeLogger logger)
         {
+            m_Logger = logger;
+            Profiler.BeginSample("VertexBufferColors.Allocate");
+            m_Data = new NativeArray<float4>(vertexCount, VertexBufferGeneratorBase.defaultAllocator);
+            Profiler.EndSample();
         }
 
-        public override unsafe bool ScheduleVertexColorJob(IGltfBuffers buffers, int colorAccessorIndex, NativeSlice<JobHandle> handles)
+        public unsafe bool ScheduleVertexColorJob(
+            int colorAccessorIndex,
+            int offset,
+            NativeSlice<JobHandle> handles,
+            IGltfBuffers buffers
+            )
         {
-            Profiler.BeginSample("ScheduleVertexColorJob");
-            Profiler.BeginSample("AllocateNativeArray");
+            Profiler.BeginSample("VertexBufferColors.Schedule");
             buffers.GetAccessorAndData(colorAccessorIndex, out var colorAcc, out var data, out var byteStride);
             if (colorAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "color");
             }
-            m_Data = new NativeArray<float4>(colorAcc.count, VertexBufferGeneratorBase.defaultAllocator);
-            Profiler.EndSample();
 
             var h = GetColors32Job(
                 data,
                 colorAcc.componentType,
                 colorAcc.GetAttributeType(),
                 byteStride,
-                m_Data
+                m_Data.Slice(offset, colorAcc.count)
             );
             if (h.HasValue)
             {
@@ -72,19 +63,23 @@ namespace GLTFast
             return true;
         }
 
-        public override void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream)
+        public void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream)
         {
             dst[offset] = new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.Float32, 4, stream);
         }
 
-        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
+        public void ApplyOnMesh(
+            UnityEngine.Mesh msh,
+            int stream,
+            MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags
+            )
         {
             Profiler.BeginSample("ApplyUVs");
             msh.SetVertexBufferData(m_Data, 0, 0, m_Data.Length, stream, flags);
             Profiler.EndSample();
         }
 
-        public override void Dispose()
+        public void Dispose()
         {
             if (m_Data.IsCreated)
             {
@@ -97,7 +92,7 @@ namespace GLTFast
             GltfComponentType inputType,
             GltfAccessorAttributeType attributeType,
             int inputByteStride,
-            NativeArray<float4> output
+            NativeSlice<float4> output
             )
         {
             Profiler.BeginSample("PrepareColors32");
@@ -133,7 +128,7 @@ namespace GLTFast
                         {
                             var job = new Jobs.ConvertColorsRgbUInt16ToRGBAFloatJob
                             {
-                                input = (System.UInt16*)input,
+                                input = (ushort*)input,
                                 inputByteStride = inputByteStride > 0 ? inputByteStride : 6,
                                 result = output
                             };
@@ -188,7 +183,7 @@ namespace GLTFast
                         {
                             var job = new Jobs.ConvertColorsRgbaUInt16ToRGBAFloatJob
                             {
-                                input = (System.UInt16*)input,
+                                input = (ushort*)input,
                                 inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
                                 result = (float4*)output.GetUnsafePtr()
                             };

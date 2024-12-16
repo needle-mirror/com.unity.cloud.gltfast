@@ -122,5 +122,10 @@ namespace GLTFast.Export
         /// or not. By default, unused attributes are discarded.
         /// </summary>
         public VertexAttributeUsage PreservedVertexAttributes { get; set; } = VertexAttributeUsage.None;
+
+        /// <summary>
+        /// [1-100] quality for JPG images
+        /// </summary>
+        public int JpgQuality { get; set; } = 60;
     }
 }

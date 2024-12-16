@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
+using System.Runtime.InteropServices;
+using GLTFast.Logging;
+using GLTFast.Schema;
 using GLTFast.Vertex;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -11,14 +14,10 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
+using Mesh = UnityEngine.Mesh;
 
 namespace GLTFast
 {
-#if BURST
-    using Unity.Mathematics;
-#endif
-    using Logging;
-
     class VertexBufferGenerator<TMainBuffer> :
         VertexBufferGeneratorBase
         where TMainBuffer : struct
@@ -34,283 +33,359 @@ namespace GLTFast
         VertexBufferColors m_Colors;
         VertexBufferBones m_Bones;
 
-        public override int VertexCount
+        AccessorBase[] m_PositionAccessors;
+
+        public override int VertexCount => VertexIntervals != null ? VertexIntervals[VertexIntervals.Length - 1] : 0;
+
+        public override int[] VertexIntervals { get; protected set; }
+
+        public override void GetVertexRange(int subMesh, out int baseVertex, out int vertexCount)
         {
-            get
-            {
-                if (m_Data.IsCreated)
-                {
-                    return m_Data.Length;
-                }
-                return 0;
-            }
+            Assert.IsNotNull(VertexIntervals);
+            Assert.IsTrue(subMesh >= 0);
+            Assert.IsTrue(subMesh < VertexIntervals.Length);
+
+            baseVertex = VertexIntervals[subMesh];
+            vertexCount = VertexIntervals[subMesh + 1] - baseVertex;
         }
 
-        public VertexBufferGenerator(ICodeLogger logger) : base(logger) { }
-
-        public override unsafe JobHandle? ScheduleVertexJobs(
-            IGltfBuffers buffers,
-            int positionAccessorIndex,
-            int normalAccessorIndex,
-            int tangentAccessorIndex,
-            int[] uvAccessorIndices,
-            int colorAccessorIndex,
-            int weightsAccessorIndex,
-            int jointsAccessorIndex
-        )
+        public override bool TryGetBounds(int subMesh, out Bounds bounds)
         {
-            buffers.GetAccessorAndData(positionAccessorIndex, out var posAcc, out var posData, out var posByteStride);
+            Assert.IsNotNull(m_PositionAccessors);
+            var boundsOpt = m_PositionAccessors[subMesh].TryGetBounds();
+            if (boundsOpt.HasValue)
+            {
+                bounds = boundsOpt.Value;
+                return true;
+            }
+            bounds = default;
+            return false;
+        }
 
-            Profiler.BeginSample("ScheduleVertexJobs");
+        public VertexBufferGenerator(int primitiveCount, GltfImportBase gltfImport)
+            : base(primitiveCount, gltfImport)
+        { }
+
+        public override void AddPrimitive(Attributes att)
+        {
+            m_Attributes[m_AttributeCount++] = att;
+        }
+
+        public override void Initialize()
+        {
+            Assert.AreEqual(m_Attributes.Length, m_AttributeCount);
+            var vertexCount = 0;
+            m_PositionAccessors = new AccessorBase[m_Attributes.Length];
+            VertexIntervals = new int[m_Attributes.Length + 1];
+            for (var i = 0; i < m_Attributes.Length; i++)
+            {
+                VertexIntervals[i] = vertexCount;
+                m_PositionAccessors[i] = ((IGltfBuffers)m_GltfImport).GetAccessor(m_Attributes[i].POSITION);
+                vertexCount += m_PositionAccessors[i].count;
+            }
+            VertexIntervals[m_Attributes.Length] = vertexCount;
+        }
+
+        public override unsafe JobHandle? CreateVertexBuffer()
+        {
             Profiler.BeginSample("AllocateNativeArray");
-            m_Data = new NativeArray<TMainBuffer>(posAcc.count, defaultAllocator);
+            m_Data = new NativeArray<TMainBuffer>(VertexCount, defaultAllocator);
             var vDataPtr = (byte*)m_Data.GetUnsafeReadOnlyPtr();
             Profiler.EndSample();
 
-            Bounds = posAcc.TryGetBounds();
+            var jobCount = 0;
 
-            int jobCount = 1;
-            int outputByteStride = 12; // sizeof Vector3
-            if (posAcc.IsSparse && posAcc.bufferView >= 0)
-            {
-                jobCount++;
-            }
-            if (normalAccessorIndex >= 0)
-            {
-                jobCount++;
-                m_HasNormals = true;
-            }
-            m_HasNormals |= calculateNormals;
-            if (m_HasNormals)
-            {
-                outputByteStride += 12;
-            }
+            var firstAttributes = m_Attributes[0];
 
-            if (tangentAccessorIndex >= 0)
+            var uvSetCount = firstAttributes.GetTexCoordsCount();
+            if (uvSetCount > 0)
             {
-                jobCount++;
-                m_HasTangents = true;
-            }
-            m_HasTangents |= calculateTangents;
-            if (m_HasTangents)
-            {
-                outputByteStride += 16;
-            }
-
-            if (uvAccessorIndices != null && uvAccessorIndices.Length > 0)
-            {
-
-                // More than two UV sets are not supported yet
-                Assert.IsTrue(uvAccessorIndices.Length < 9);
-
-                jobCount += uvAccessorIndices.Length;
-                switch (uvAccessorIndices.Length)
+                if (uvSetCount > 8)
                 {
-                    case 1:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord1>(m_Logger);
-                        break;
-                    case 2:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord2>(m_Logger);
-                        break;
-                    case 3:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord3>(m_Logger);
-                        break;
-                    case 4:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord4>(m_Logger);
-                        break;
-                    case 5:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord5>(m_Logger);
-                        break;
-                    case 6:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord6>(m_Logger);
-                        break;
-                    case 7:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord7>(m_Logger);
-                        break;
-                    default:
-                        m_TexCoords = new VertexBufferTexCoords<VTexCoord8>(m_Logger);
-                        break;
+                    // More than eight UV sets are not supported yet
+                    m_GltfImport.Logger?.Warning(LogCode.UVLimit);
                 }
+
+                jobCount += uvSetCount * m_Attributes.Length;
+                m_TexCoords = uvSetCount switch
+                {
+                    1 => new VertexBufferTexCoords<VTexCoord1>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    2 => new VertexBufferTexCoords<VTexCoord2>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    3 => new VertexBufferTexCoords<VTexCoord3>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    4 => new VertexBufferTexCoords<VTexCoord4>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    5 => new VertexBufferTexCoords<VTexCoord5>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    6 => new VertexBufferTexCoords<VTexCoord6>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    7 => new VertexBufferTexCoords<VTexCoord7>(uvSetCount, VertexCount, m_GltfImport.Logger),
+                    _ => new VertexBufferTexCoords<VTexCoord8>(uvSetCount, VertexCount, m_GltfImport.Logger)
+                };
             }
 
-            m_HasColors = colorAccessorIndex >= 0;
+            m_HasColors = firstAttributes.COLOR_0 >= 0;
             if (m_HasColors)
             {
-                jobCount++;
-                m_Colors = new VertexBufferColors();
+                jobCount += m_Attributes.Length;
+                m_Colors = new VertexBufferColors(VertexCount, m_GltfImport.Logger);
             }
 
-            m_HasBones = weightsAccessorIndex >= 0 && jointsAccessorIndex >= 0;
+            m_HasBones = firstAttributes.WEIGHTS_0 >= 0 && firstAttributes.JOINTS_0 >= 0;
             if (m_HasBones)
             {
-                jobCount++;
-                m_Bones = new VertexBufferBones(m_Logger);
+                jobCount += m_Attributes.Length;
+                m_Bones = new VertexBufferBones(VertexCount, m_GltfImport.Logger);
             }
 
-            NativeArray<JobHandle> handles = new NativeArray<JobHandle>(jobCount, defaultAllocator);
-            int handleIndex = 0;
-
+            for (var i = 0; i < m_Attributes.Length; i++)
             {
-                JobHandle? h = null;
-                if (posAcc.bufferView >= 0)
+                jobCount += 1; // Positions
+
+                var att = m_Attributes[i];
+
+                if (m_PositionAccessors[i].IsSparse && m_PositionAccessors[i].bufferView >= 0)
+                    jobCount++;
+
+                if (att.NORMAL >= 0)
                 {
-                    h = GetVector3Job(
-                        posData,
-                        posAcc.count,
-                        posAcc.componentType,
-                        posByteStride,
-                        (float3*)vDataPtr,
-                        outputByteStride,
-                        posAcc.normalized,
-                        false // positional data never needs to be normalized
-                    );
+                    jobCount++;
+                    m_HasNormals = true;
                 }
-                if (posAcc.IsSparse)
+
+                m_HasNormals |= calculateNormals;
+
+                if (att.TANGENT >= 0)
                 {
-                    buffers.GetAccessorSparseIndices(posAcc.Sparse.Indices, out var posIndexData);
-                    buffers.GetAccessorSparseValues(posAcc.Sparse.Values, out var posValueData);
-                    var sparseJobHandle = GetVector3SparseJob(
-                        posIndexData,
-                        posValueData,
-                        posAcc.Sparse.count,
-                        posAcc.Sparse.Indices.componentType,
-                        posAcc.componentType,
-                        (float3*)vDataPtr,
-                        outputByteStride,
-                        dependsOn: ref h,
-                        posAcc.normalized
-                    );
-                    if (sparseJobHandle.HasValue)
-                    {
-                        handles[handleIndex] = sparseJobHandle.Value;
-                        handleIndex++;
-                    }
-                    else
-                    {
-                        Profiler.EndSample();
-                        return null;
-                    }
+                    jobCount++;
+                    m_HasTangents = true;
                 }
-                if (h.HasValue)
-                {
-                    handles[handleIndex] = h.Value;
-                    handleIndex++;
-                }
-                else
-                {
-                    Profiler.EndSample();
+
+                m_HasTangents |= calculateTangents;
+            }
+
+            var handles = new NativeArray<JobHandle>(jobCount, defaultAllocator);
+            var handleIndex = 0;
+            var outputByteStride = Marshal.SizeOf(typeof(TMainBuffer));
+
+            for (var i = 0; i < m_Attributes.Length; i++)
+            {
+                var att = m_Attributes[i];
+                if (!SchedulePositionsJobs(i, vDataPtr, outputByteStride, handles, ref handleIndex))
                     return null;
-                }
-            }
 
-            if (normalAccessorIndex >= 0)
-            {
-                buffers.GetAccessorAndData(normalAccessorIndex, out var nrmAcc, out var input, out var inputByteStride);
-                if (nrmAcc.IsSparse)
+                if (att.NORMAL >= 0
+                    && !ScheduleNormalsJobs(att, vDataPtr, outputByteStride, i, handles, ref handleIndex)
+                    )
+                    return null;
+
+                if (att.TANGENT >= 0
+                    && !ScheduleTangentsJobs(att, vDataPtr, outputByteStride, i, handles, ref handleIndex)
+                   )
+                    return null;
+
+                if (m_TexCoords != null)
                 {
-                    m_Logger?.Error(LogCode.SparseAccessor, "normals");
+                    handleIndex = ScheduleTexCoordJobs(att, uvSetCount, i, handles, handleIndex);
                 }
-                var h = GetVector3Job(
-                    input,
-                    nrmAcc.count,
-                    nrmAcc.componentType,
-                    inputByteStride,
-                    (float3*)(vDataPtr + 12),
-                    outputByteStride,
-                    nrmAcc.normalized
-                //, normals need to be unit length
+
+                if (m_HasColors && !ScheduleColorsJobs(att, i, handles, ref handleIndex))
+                    return null;
+
+                if (m_HasBones && !ScheduleVertexBonesJobs(att, i, handles, handleIndex))
+                    return null;
+            }
+            var handle = jobCount > 1 ? JobHandle.CombineDependencies(handles) : handles[0];
+            handles.Dispose();
+            return handle;
+        }
+
+        unsafe bool SchedulePositionsJobs(int i, byte* vDataPtr, int outputByteStride, NativeArray<JobHandle> handles, ref int handleIndex)
+        {
+            JobHandle? h = null;
+
+            if (m_PositionAccessors[i].bufferView >= 0)
+            {
+                ((IGltfBuffers)m_GltfImport).GetAccessorDataAndByteStride(
+                    m_Attributes[i].POSITION,
+                    out var posData,
+                    out var posByteStride
                 );
-                if (h.HasValue)
-                {
-                    handles[handleIndex] = h.Value;
-                    handleIndex++;
-                }
-                else
-                {
-                    Profiler.EndSample();
-                    return null;
-                }
-            }
-
-            if (tangentAccessorIndex >= 0)
-            {
-                buffers.GetAccessorAndData(tangentAccessorIndex, out var tanAcc, out var input, out var inputByteStride);
-                if (tanAcc.IsSparse)
-                {
-                    m_Logger?.Error(LogCode.SparseAccessor, "tangents");
-                }
-                var h = GetTangentsJob(
-                    input,
-                    tanAcc.count,
-                    tanAcc.componentType,
-                    inputByteStride,
-                    (float4*)(vDataPtr + 24),
+                h = GetVector3Job(
+                    posData.GetUnsafeReadOnlyPtr(),
+                    m_PositionAccessors[i].count,
+                    m_PositionAccessors[i].componentType,
+                    posByteStride,
+                    (float3*)(vDataPtr + outputByteStride * VertexIntervals[i]),
                     outputByteStride,
-                    tanAcc.normalized
+                    m_PositionAccessors[i].normalized,
+                    false // positional data never needs to be normalized
                 );
-                if (h.HasValue)
+            }
+
+            if (m_PositionAccessors[i].IsSparse)
+            {
+                m_GltfImport.GetAccessorSparseIndices(m_PositionAccessors[i].Sparse.Indices, out var posIndexData);
+                m_GltfImport.GetAccessorSparseValues(m_PositionAccessors[i].Sparse.Values, out var posValueData);
+                var sparseJobHandle = GetVector3SparseJob(
+                    posIndexData,
+                    posValueData,
+                    m_PositionAccessors[i].Sparse.count,
+                    m_PositionAccessors[i].Sparse.Indices.componentType,
+                    m_PositionAccessors[i].componentType,
+                    (float3*)(vDataPtr + outputByteStride * VertexIntervals[i]),
+                    outputByteStride,
+                    dependsOn: ref h,
+                    m_PositionAccessors[i].normalized
+                );
+                if (sparseJobHandle.HasValue)
                 {
-                    handles[handleIndex] = h.Value;
+                    handles[handleIndex] = sparseJobHandle.Value;
                     handleIndex++;
                 }
                 else
                 {
                     Profiler.EndSample();
-                    return null;
+                    return false;
                 }
             }
 
-            if (m_TexCoords != null)
+            if (h.HasValue)
             {
-                m_TexCoords.ScheduleVertexUVJobs(
-                    buffers,
-                    uvAccessorIndices,
-                    posAcc.count,
-                    new NativeSlice<JobHandle>(
-                        handles,
-                        handleIndex,
-                        uvAccessorIndices.Length
-                        )
-                    );
-                handleIndex += uvAccessorIndices.Length;
-            }
-
-            if (m_HasColors)
-            {
-                m_Colors.ScheduleVertexColorJob(
-                    buffers,
-                    colorAccessorIndex,
-                    new NativeSlice<JobHandle>(
-                        handles,
-                        handleIndex,
-                        1
-                        )
-                    );
+                handles[handleIndex] = h.Value;
                 handleIndex++;
             }
-
-            if (m_HasBones)
+            else
             {
-                var h = m_Bones.ScheduleVertexBonesJob(
-                    buffers,
-                    weightsAccessorIndex,
-                    jointsAccessorIndex
-                );
-                if (h.HasValue)
-                {
-                    handles[handleIndex] = h.Value;
-                }
-                else
-                {
-                    Profiler.EndSample();
-                    return null;
-                }
+                Profiler.EndSample();
+                return false;
             }
 
-            var handle = (jobCount > 1) ? JobHandle.CombineDependencies(handles) : handles[0];
-            handles.Dispose();
-            Profiler.EndSample();
-            return handle;
+            return true;
+        }
+
+        unsafe bool ScheduleNormalsJobs(Attributes att, byte* vDataPtr, int outputByteStride, int i, NativeArray<JobHandle> handles, ref int handleIndex)
+        {
+            ((IGltfBuffers)m_GltfImport).GetAccessorAndData(
+                att.NORMAL,
+                out var nrmAcc,
+                out var input,
+                out var inputByteStride
+            );
+            if (nrmAcc.IsSparse)
+            {
+                m_GltfImport.Logger?.Error(LogCode.SparseAccessor, "normals");
+            }
+
+            var h = GetVector3Job(
+                input,
+                nrmAcc.count,
+                nrmAcc.componentType,
+                inputByteStride,
+                (float3*)(vDataPtr + outputByteStride * VertexIntervals[i] + 12),
+                outputByteStride,
+                nrmAcc.normalized
+
+            //, normals need to be unit length
+            );
+            if (h.HasValue)
+            {
+                handles[handleIndex] = h.Value;
+                handleIndex++;
+            }
+            else
+            {
+                Profiler.EndSample();
+                return false;
+            }
+
+            return true;
+        }
+
+        unsafe bool ScheduleTangentsJobs(Attributes att, byte* vDataPtr, int outputByteStride, int i, NativeArray<JobHandle> handles, ref int handleIndex)
+        {
+            ((IGltfBuffers)m_GltfImport).GetAccessorAndData(
+                att.TANGENT,
+                out var tanAcc,
+                out var input,
+                out var inputByteStride
+            );
+            if (tanAcc.IsSparse)
+            {
+                m_GltfImport.Logger?.Error(LogCode.SparseAccessor, "tangents");
+            }
+
+            var h = GetTangentsJob(
+                input,
+                tanAcc.count,
+                tanAcc.componentType,
+                inputByteStride,
+                (float4*)(vDataPtr + outputByteStride * VertexIntervals[i] + 24),
+                outputByteStride,
+                tanAcc.normalized
+            );
+            if (h.HasValue)
+            {
+                handles[handleIndex] = h.Value;
+                handleIndex++;
+            }
+            else
+            {
+                Profiler.EndSample();
+                return false;
+            }
+
+            return true;
+        }
+
+        int ScheduleTexCoordJobs(Attributes att, int uvSetCount, int i, NativeArray<JobHandle> handles, int handleIndex)
+        {
+            var uvSuccess = att.TryGetAllUVAccessors(out var uvAccessors, out _);
+            Assert.IsTrue(uvSuccess);
+            Assert.AreEqual(uvSetCount, uvAccessors.Length);
+
+            m_TexCoords.ScheduleVertexUVJobs(
+                VertexIntervals[i],
+                uvAccessors,
+                handles.Slice(handleIndex, uvAccessors.Length),
+                m_GltfImport
+            );
+            handleIndex += uvAccessors.Length;
+            return handleIndex;
+        }
+
+        bool ScheduleColorsJobs(Attributes att, int i, NativeArray<JobHandle> handles, ref int handleIndex)
+        {
+            var success = m_Colors.ScheduleVertexColorJob(
+                att.COLOR_0,
+                VertexIntervals[i],
+                handles.Slice(handleIndex, 1),
+                m_GltfImport
+            );
+            if (!success)
+            {
+                Profiler.EndSample();
+                return false;
+            }
+            handleIndex++;
+            return true;
+        }
+
+        bool ScheduleVertexBonesJobs(Attributes att, int i, NativeArray<JobHandle> handles, int handleIndex)
+        {
+            var h = m_Bones.ScheduleVertexBonesJob(
+                att.WEIGHTS_0,
+                att.JOINTS_0,
+                VertexIntervals[i],
+                m_GltfImport
+            );
+            if (h.HasValue)
+            {
+                handles[handleIndex] = h.Value;
+            }
+            else
+            {
+                Profiler.EndSample();
+                return false;
+            }
+
+            return true;
         }
 
         void CreateDescriptors()
@@ -359,7 +434,7 @@ namespace GLTFast
             }
         }
 
-        public override void ApplyOnMesh(Mesh msh, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(Mesh msh, MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags)
         {
 
             Profiler.BeginSample("ApplyOnMesh");
@@ -399,26 +474,18 @@ namespace GLTFast
             Profiler.EndSample();
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (m_Data.IsCreated)
             {
                 m_Data.Dispose();
             }
 
-            if (m_Colors != null)
+            if (disposing)
             {
-                m_Colors.Dispose();
-            }
-
-            if (m_TexCoords != null)
-            {
-                m_TexCoords.Dispose();
-            }
-
-            if (m_Bones != null)
-            {
-                m_Bones.Dispose();
+                m_Colors?.Dispose();
+                m_TexCoords?.Dispose();
+                m_Bones?.Dispose();
             }
         }
     }

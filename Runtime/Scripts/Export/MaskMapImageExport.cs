@@ -41,7 +41,7 @@ namespace GLTFast.Export
         {
             if (m_Texture != null)
             {
-                imageData = EncodeTexture(m_Texture, ImageFormat, false, GetMaskMapBlitMaterial());
+                imageData = EncodeTexture(m_Texture, ImageFormat, JpgQuality, false, GetMaskMapBlitMaterial());
                 return true;
             }
             imageData = null;

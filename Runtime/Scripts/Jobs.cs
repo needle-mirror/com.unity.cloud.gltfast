@@ -937,7 +937,7 @@ namespace GLTFast.Jobs
         public byte* input;
 
         [WriteOnly]
-        public NativeArray<float4> result;
+        public NativeSlice<float4> result;
 
         public void Execute(int i)
         {
@@ -961,7 +961,7 @@ namespace GLTFast.Jobs
         public ushort* input;
 
         [WriteOnly]
-        public NativeArray<float4> result;
+        public NativeSlice<float4> result;
 
         public void Execute(int i)
         {
@@ -1044,7 +1044,7 @@ namespace GLTFast.Jobs
         public byte* input;
 
         [WriteOnly]
-        public NativeArray<float4> result;
+        public NativeSlice<float4> result;
 
         public void Execute(int i)
         {

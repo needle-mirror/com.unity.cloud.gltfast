@@ -17,7 +17,7 @@ This repository comes with test projects that are pre-configured to have all req
 
 To open a project open [Unity&reg; Hub][UnityHub], go to *Projects* and pick *Add* → *Add project from disk*. Select the respective project folder from within the `Projects` directory in your local copy.
 
-Now the project will be listed in Unity Hub with an *Unknown* editor version. Upon opening the project first time you have to pick a version of your choice (within the range of [supported versions](features.md#unity-version-support)).
+Upon opening the project you can pick a Unity version of your choice (within the range of [supported versions](features.md#unity-version-support)). In fact you might have to, if the predefined version is not installed. If you decide to work on more recent versions, keep in mind that for contributions your changes have to be backwards compatible to all supported versions.
 
 ## Setup a Custom Project
 

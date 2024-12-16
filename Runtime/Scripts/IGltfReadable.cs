@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System;
 using GLTFast.Schema;
 using Unity.Collections;
 using UnityEngine;
@@ -95,6 +96,13 @@ namespace GLTFast
         MaterialBase GetSourceMaterial(int index = 0);
 
         /// <summary>
+        /// Get source (de-serialized glTF) mesh.
+        /// </summary>
+        /// <param name="meshIndex">glTF mesh index.</param>
+        /// <returns>De-serialized glTF mesh.</returns>
+        MeshBase GetSourceMesh(int meshIndex);
+
+        /// <summary>
         /// Get source (de-serialized glTF) mesh primitive
         /// </summary>
         /// <param name="meshIndex">glTF mesh index.</param>
@@ -153,6 +161,16 @@ namespace GLTFast
         /// <param name="accessorIndex">glTF accessor index</param>
         /// <returns>Valid byte-slice view into accessor's data if parameter was correct and buffers are available.
         /// Zero-length slice otherwise.</returns>
+        [Obsolete("Use GetAccessorData instead.")]
         NativeSlice<byte> GetAccessor(int accessorIndex);
+
+        /// <summary>
+        /// Creates a generic byte-array view into an accessor.
+        /// Only available during loading phase as underlying buffers are disposed right afterwards.
+        /// </summary>
+        /// <param name="accessorIndex">glTF accessor index</param>
+        /// <returns>Valid byte-slice view into accessor's data if parameter was correct and buffers are available.
+        /// Zero-length slice otherwise.</returns>
+        NativeSlice<byte> GetAccessorData(int accessorIndex);
     }
 }

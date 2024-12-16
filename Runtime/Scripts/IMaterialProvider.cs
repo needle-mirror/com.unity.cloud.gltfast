@@ -31,10 +31,11 @@ namespace GLTFast
         /// Returns the material slots that correspond to the given MeshResult's sub-meshes.
         /// </summary>
         /// <param name="meshIndex">glTF mesh index.</param>
-        /// <param name="meshResultOffset">Mesh result offset.</param>
+        /// <param name="meshNumeration">Per glTF mesh <see cref="MeshResult"/> numeration. A glTF mesh is converted
+        /// into one or more MeshResults which are numbered consecutively.</param>
         /// <returns>Corresponding materials variants slots.</returns>
         /// <seealso cref="IMaterialsVariantsSlot"/>
         /// <seealso cref="MeshResult"/>
-        IMaterialsVariantsSlot[] GetMaterialsVariantsSlots(int meshIndex, int meshResultOffset);
+        IMaterialsVariantsSlot[] GetMaterialsVariantsSlots(int meshIndex, int meshNumeration);
     }
 }

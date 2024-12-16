@@ -199,7 +199,7 @@ namespace GLTFast.Editor
                     AddObjectToAsset(ctx, $"materials/{mat.name}", mat);
                 }
 
-                var meshes = m_Gltf.GetMeshes();
+                var meshes = m_Gltf.Meshes;
                 if (meshes != null)
                 {
                     foreach (var mesh in meshes)

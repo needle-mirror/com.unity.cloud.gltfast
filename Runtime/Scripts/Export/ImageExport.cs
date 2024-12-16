@@ -143,7 +143,7 @@ namespace GLTFast.Export
         {
             if (m_Texture != null)
             {
-                imageData = EncodeTexture(m_Texture, ImageFormat, blitMaterial: GetColorBlitMaterial());
+                imageData = EncodeTexture(m_Texture, ImageFormat, JpgQuality, blitMaterial: GetColorBlitMaterial());
                 return imageData != null;
             }
             imageData = null;

@@ -187,14 +187,14 @@ namespace GLTFast {
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         ) {
             if ((m_Settings.Mask & ComponentType.Mesh) == 0) {
                 return;
             }
             Profiler.BeginSample("AddPrimitive");
             Entity node;
-            if(primitiveNumeration==0) {
+            if(meshNumeration==0) {
                 // Use Node GameObject for first Primitive
                 node = m_Nodes[nodeIndex];
             } else {
@@ -297,7 +297,7 @@ namespace GLTFast {
             NativeArray<Vector3>? positions,
             NativeArray<Quaternion>? rotations,
             NativeArray<Vector3>? scales,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         ) {
             if ((m_Settings.Mask & ComponentType.Mesh) == 0) {
                 return;

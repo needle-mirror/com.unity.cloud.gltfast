@@ -292,7 +292,7 @@ See details in corresponding issue at https://github.com/atteneder/glTFast/issue
             { LogCode.MaterialTransmissionApprox, "Chance of incorrect materials! glTF transmission is approximated when using built-in render pipeline!" },
             { LogCode.MaterialTransmissionApproxUrp, @"Chance of incorrect materials! glTF transmission
 is approximated. Enable Opaque Texture access in Universal Render Pipeline!" },
-            { LogCode.MeshBoundsMissing, "No bounds for mesh {0} => calculating them." },
+            { LogCode.MeshBoundsMissing, "No bounds on position accessor {0} => calculating them." },
             { LogCode.MeshNotReadable, "Skipping non-readable mesh {0}" },
             { LogCode.MissingImageURL, "Image URL missing" },
             { LogCode.MorphTargetContextFail, "Retrieving morph target failed" },

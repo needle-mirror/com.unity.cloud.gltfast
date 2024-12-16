@@ -1,1 +1,41 @@
-{"name":"com.unity.cloud.gltfast","version":"6.9.1","displayName":"Unity glTFast","description":"Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor","unity":"2020.3","keywords":["mesh","gltf","asset","format","draco","ktx","basis","universal","basisu"],"dependencies":{"com.unity.modules.jsonserialize":"1.0.0","com.unity.modules.unitywebrequest":"1.0.0","com.unity.mathematics":"1.3.1","com.unity.burst":"1.8.4","com.unity.collections":"1.5.1"},"relatedPackages":{"com.unity.cloud.gltfast.tests":"0.0.0"},"unityRelease":"48f1","repository":{"revision":"d87c8228bf7650a1256ae241c4a6a637a2ced5a9","type":"git","url":"https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git"},"documentationUrl":"https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.9/manual/index.html","_upm":{"changelog":"### Added\n- (Test) `OpenGltfScene` with open glTF file dialog for convenient testing.\n- (Test) Tests for C# jobs that calculate or re-order indices.\n- Third party notices.\n\n### Changed\n- Node name is assigned earlier during instantiation, enabling easier node identification by name (partially fixes [#724](https://github.com/atteneder/glTFast/issues/724)).\n- (Test) Updated test project dependencies.\n- (CI) Migrated code coverage.\n- Code refactoring\n  - Flattened `GltfImportBase.Prepare` by extracting many large code blocks into dedicated methods.\n  - Improved class/field naming. It's now less deceptive and more uniform.\n  - Using `NativeArray` directly/only instead of `AccessorData` classes/managed arrays. With this change `NativeArrays` are used for index buffers as well which reduces the amount of managed memory allocated.\n- Facilitated use of safer NativeCollections in C# jobs that calculate or re-order indices instead of `unsafe` / pointers.\n\n### Fixed\n- Made sure that mesh primitives of different drawmode (topology) are not mixed up."}}
+{
+  "name": "com.unity.cloud.gltfast",
+  "version": "6.10.0",
+  "displayName": "Unity glTFast",
+  "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
+  "unity": "2020.3",
+  "keywords": [
+    "mesh",
+    "gltf",
+    "asset",
+    "format",
+    "draco",
+    "ktx",
+    "basis",
+    "universal",
+    "basisu"
+  ],
+  "dependencies": {
+    "com.unity.modules.jsonserialize": "1.0.0",
+    "com.unity.modules.unitywebrequest": "1.0.0",
+    "com.unity.mathematics": "1.3.1",
+    "com.unity.burst": "1.8.4",
+    "com.unity.collections": "1.5.1"
+  },
+  "relatedPackages": {
+    "com.unity.cloud.gltfast.tests": "0.0.0"
+  },
+  "unityRelease": "48f1",
+  "_upm": {
+    "changelog": "### Added\n- Extended access to meshes.\n  - `IGltfReadable.GetSourceMesh` returns source (de-serialized glTF) mesh.\n  - `GltfImportBase.Meshes` to retrieve all imported meshes.\n  - `GltfImportBase.GetMeshCount` returns the number of imported meshes per glTF mesh.\n  - `GltfImportBase.GetMeshes` to iterate the imported meshes of a single glTF mesh.\n  - `GltfImportBase.GetMesh` to access a single imported meshes.\n- Test asset *SubMesh*.\n- (CI) Automatically generated CI jobs (via Wrench/RecipeEngine; required for PackageWorks).\n- (CI) Renovate action to auto-update dependencies in CI jobs.\n- (CI) Renovate validation action.\n- `JpgQuality` option in `ExportSettings` for finer control of jpg image exports.\n- Project versions to test projects.\n\n### Changed\n- Mesh primitives of equal vertex buffer layout will result in a single Unity mesh with multiple sub-meshes instead of multiple Unity meshes (fixes [#153](https://github.com/atteneder/glTFast/issues/153)).\n\n### Deprecated\n- `IGltfReadable.GetAccessor` (replaced by `IGltfReadable.GetAccessorData`).\n- `GltfImportBase.GetMeshes` (replaced by `GltfImportBase.Meshes`).\n\n### Fixed\n- Preserve per-submesh bounding box.\n- `GltfAsset` properly cleans up scene instance's `Animation` component, which fixes repeated loading of animated glTFs."
+  },
+  "upmCi": {
+    "footprint": "47926e3b4923ab02053f72139750c51ec235908c"
+  },
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.10/manual/index.html",
+  "repository": {
+    "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
+    "type": "git",
+    "revision": "292fd879bc504ae57214b1484f2652b855732183"
+  }
+}

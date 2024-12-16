@@ -414,6 +414,7 @@ namespace GLTFast.Export
                 mimeType = imageExport.MimeType
             };
 
+            imageExport.JpgQuality = m_Settings.JpgQuality;
             m_ImageExports.Add(imageExport);
             m_Images.Add(image);
 

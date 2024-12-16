@@ -57,14 +57,25 @@ namespace GLTFast.Export
         public abstract byte[] GetData();
 
         /// <summary>
+        /// [1-100] quality for JPG images
+        /// </summary>
+        public int JpgQuality { get; set; } = 60;
+
+        /// <summary>
         /// Encodes the export texture
         /// </summary>
         /// <param name="texture">Main texture to encode</param>
         /// <param name="format">Image format</param>
+        /// <param name="jpgQuality">[1-100] quality for JPG images</param>
         /// <param name="hasAlpha">True if the texture has an alpha channel</param>
         /// <param name="blitMaterial">Custom blit material</param>
         /// <returns>Encoded texture data</returns>
-        protected static byte[] EncodeTexture(Texture2D texture, ImageFormat format, bool hasAlpha = true, Material blitMaterial = null)
+        protected static byte[] EncodeTexture(
+            Texture2D texture,
+            ImageFormat format,
+            int jpgQuality,
+            bool hasAlpha = true,
+            Material blitMaterial = null)
         {
 
 #if UNITY_IMAGECONVERSION
@@ -115,7 +126,7 @@ namespace GLTFast.Export
 
             var imageData = format == ImageFormat.Png
                 ? exportTexture.EncodeToPNG()
-                : exportTexture.EncodeToJPG(60);
+                : exportTexture.EncodeToJPG(jpgQuality);
 
             if (tmpTexture) {
                 // Release temporary texture

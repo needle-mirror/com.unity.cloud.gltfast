@@ -64,7 +64,7 @@ namespace GLTFast
         void SetNodeName(uint nodeIndex, string name);
 
         /// <summary>
-        /// Called for adding a Primitive/Mesh to a Node.
+        /// Adds a Mesh/MeshResult to a Node for rendering purpose.
         /// </summary>
         /// <param name="nodeIndex">Index of the node</param>
         /// <param name="meshName">Mesh's name</param>
@@ -72,7 +72,9 @@ namespace GLTFast
         /// <param name="joints">If a skin was attached, the joint indices. Null otherwise</param>
         /// <param name="rootJoint">Root joint node index, if present</param>
         /// <param name="morphTargetWeights">Morph target weights, if present</param>
-        /// <param name="primitiveNumeration">Primitives are numerated per Node, starting with 0</param>
+        /// <param name="meshNumeration">Per glTF mesh <see cref="MeshResult"/> numeration. A glTF mesh is converted
+        /// into one or more MeshResults which are numbered consecutively. <see cref="AddPrimitive"/> is called once
+        /// for each of those MeshResults.</param>
         void AddPrimitive(
             uint nodeIndex,
             string meshName,
@@ -80,13 +82,14 @@ namespace GLTFast
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         );
 
         /// <summary>
-        /// Called for adding a Primitive/Mesh to a Node that uses
-        /// GPU instancing (EXT_mesh_gpu_instancing) to render the same mesh/material combination many times.
-        /// Similar to/called instead of <see cref="AddPrimitive"/>, without joints/skin support.
+        /// Adds a Mesh/MeshResult to a Node with the purpose of rendering multiple instances of this MeshResult and
+        /// material combination (through glTF extension
+        /// <a href="https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Vendor/EXT_mesh_gpu_instancing/README.md">EXT_mesh_gpu_instancing</a>).
+        /// In contrast to <see cref="AddPrimitive"/> it lacks joints/skin support.
         /// </summary>
         /// <param name="nodeIndex">Index of the node</param>
         /// <param name="meshName">Mesh's name</param>
@@ -95,7 +98,9 @@ namespace GLTFast
         /// <param name="positions">Instance positions</param>
         /// <param name="rotations">Instance rotations</param>
         /// <param name="scales">Instance scales</param>
-        /// <param name="primitiveNumeration">Primitives are numerated per Node, starting with 0</param>
+        /// <param name="meshNumeration">Per glTF mesh <see cref="MeshResult"/> numeration. A glTF mesh is converted
+        /// into one or more MeshResults which are numbered consecutively. <see cref="AddPrimitive"/> is called once
+        /// for each of those MeshResults.</param>
         void AddPrimitiveInstanced(
             uint nodeIndex,
             string meshName,
@@ -104,7 +109,7 @@ namespace GLTFast
             NativeArray<Vector3>? positions,
             NativeArray<Quaternion>? rotations,
             NativeArray<Vector3>? scales,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         );
 
         /// <summary>

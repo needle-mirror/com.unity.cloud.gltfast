@@ -221,7 +221,7 @@ namespace GLTFast
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         )
         {
             if ((m_Settings.Mask & ComponentType.Mesh) == 0)
@@ -230,7 +230,7 @@ namespace GLTFast
             }
 
             GameObject meshGo;
-            if (primitiveNumeration == 0)
+            if (meshNumeration == 0)
             {
                 // Use Node GameObject for first Primitive
                 meshGo = m_Nodes[nodeIndex];
@@ -291,7 +291,7 @@ namespace GLTFast
 
             renderer.sharedMaterials = materials;
 
-            var slots = m_Gltf.GetMaterialsVariantsSlots(meshResult.meshIndex, primitiveNumeration);
+            var slots = m_Gltf.GetMaterialsVariantsSlots(meshResult.meshIndex, meshNumeration);
             if (slots != null && slots.Length > 0)
             {
                 m_InstanceSlots ??= new List<IMaterialsVariantsSlotInstance>();
@@ -307,7 +307,7 @@ namespace GLTFast
                 joints,
                 rootJoint,
                 morphTargetWeights,
-                primitiveNumeration
+                meshNumeration
                 );
         }
 
@@ -320,7 +320,7 @@ namespace GLTFast
             NativeArray<Vector3>? positions,
             NativeArray<Quaternion>? rotations,
             NativeArray<Vector3>? scales,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         )
         {
             if ((m_Settings.Mask & ComponentType.Mesh) == 0)
@@ -336,7 +336,7 @@ namespace GLTFast
                 materials[index] = material;
             }
 
-            var slots = m_Gltf.GetMaterialsVariantsSlots(meshResult.meshIndex, primitiveNumeration);
+            var slots = m_Gltf.GetMaterialsVariantsSlots(meshResult.meshIndex, meshNumeration);
             var hasMaterialsVariants = slots != null && slots.Length > 0;
             var renderers = hasMaterialsVariants
                 ? new Renderer[instanceCount]
@@ -590,7 +590,8 @@ namespace GLTFast
         /// <param name="joints">If a skin was attached, the joint indices. Null otherwise</param>
         /// <param name="rootJoint">Root joint node index, if present</param>
         /// <param name="morphTargetWeights">Morph target weights, if present</param>
-        /// <param name="primitiveNumeration">Primitives are numerated per Node, starting with 0</param>
+        /// <param name="meshNumeration">Per glTF mesh <see cref="MeshResult"/> numeration. A glTF mesh is converted
+        /// into one or more MeshResults which are numbered consecutively.</param>
         public delegate void MeshAddedDelegate(
             GameObject gameObject,
             uint nodeIndex,
@@ -599,7 +600,7 @@ namespace GLTFast
             uint[] joints = null,
             uint? rootJoint = null,
             float[] morphTargetWeights = null,
-            int primitiveNumeration = 0
+            int meshNumeration = 0
         );
 
         /// <summary>Invoked when a node's GameObject has been created.</summary>

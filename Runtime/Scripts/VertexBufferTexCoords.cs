@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -15,7 +16,7 @@ namespace GLTFast
     using Logging;
     using Schema;
 
-    abstract class VertexBufferTexCoordsBase
+    abstract class VertexBufferTexCoordsBase : IDisposable
     {
 
         protected ICodeLogger m_Logger;
@@ -26,31 +27,59 @@ namespace GLTFast
         }
 
         public int UVSetCount { get; protected set; }
-        public abstract bool ScheduleVertexUVJobs(IGltfBuffers buffers, int[] uvAccessorIndices, int vertexCount, NativeSlice<JobHandle> handles);
+        public abstract bool ScheduleVertexUVJobs(
+            int offset,
+            int[] uvAccessorIndices,
+            NativeSlice<JobHandle> handles,
+            IGltfBuffers buffers
+            );
         public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream);
-        public abstract void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags);
-        public abstract void Dispose();
+        public abstract void ApplyOnMesh(
+            UnityEngine.Mesh msh,
+            int stream,
+            MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags
+            );
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected abstract void Dispose(bool disposing);
     }
 
     class VertexBufferTexCoords<T> : VertexBufferTexCoordsBase where T : struct
     {
         NativeArray<T> m_Data;
 
-        public VertexBufferTexCoords(ICodeLogger logger) : base(logger) { }
+        public VertexBufferTexCoords(int uvSetCount, int vertexCount, ICodeLogger logger)
+            : base(logger)
+        {
+            UVSetCount = uvSetCount;
+            m_Data = new NativeArray<T>(
+                vertexCount,
+                VertexBufferGeneratorBase.defaultAllocator
+            );
+        }
 
-        public override unsafe bool ScheduleVertexUVJobs(IGltfBuffers buffers, int[] uvAccessorIndices, int vertexCount, NativeSlice<JobHandle> handles)
+        public override unsafe bool ScheduleVertexUVJobs(
+            int offset,
+            int[] uvAccessorIndices,
+            NativeSlice<JobHandle> handles,
+            IGltfBuffers buffers
+            )
         {
             Profiler.BeginSample("ScheduleVertexUVJobs");
             Profiler.BeginSample("AllocateNativeArray");
-            m_Data = new NativeArray<T>(vertexCount, VertexBufferGeneratorBase.defaultAllocator);
-            var vDataPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeReadOnlyPtr(m_Data);
-            Profiler.EndSample();
-            UVSetCount = uvAccessorIndices.Length;
-            int outputByteStride = uvAccessorIndices.Length * 8;
 
-            for (int i = 0; i < uvAccessorIndices.Length; i++)
+            var vDataPtr = (byte*)m_Data.GetUnsafeReadOnlyPtr();
+            Profiler.EndSample();
+            var outputByteStride = UVSetCount * sizeof(float2);
+
+            for (var uvSet = 0; uvSet < UVSetCount; uvSet++)
             {
-                var accIndex = uvAccessorIndices[i];
+                var accIndex = uvAccessorIndices[uvSet];
                 buffers.GetAccessorAndData(accIndex, out var uvAcc, out var data, out var byteStride);
                 if (uvAcc.IsSparse)
                 {
@@ -63,13 +92,13 @@ namespace GLTFast
                     uvAcc.count,
                     uvAcc.componentType,
                     byteStride,
-                    (float2*)(vDataPtr + (i * 8)),
+                    (float2*)(vDataPtr + outputByteStride * offset + uvSet * sizeof(float2)),
                     outputByteStride,
                     uvAcc.normalized
                 );
                 if (h.HasValue)
                 {
-                    handles[i] = h.Value;
+                    handles[uvSet] = h.Value;
                 }
                 else
                 {
@@ -91,14 +120,18 @@ namespace GLTFast
             }
         }
 
-        public override void ApplyOnMesh(UnityEngine.Mesh msh, int stream, MeshUpdateFlags flags = MeshResultGeneratorBase.defaultMeshUpdateFlags)
+        public override void ApplyOnMesh(
+            UnityEngine.Mesh msh,
+            int stream,
+            MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags
+            )
         {
             Profiler.BeginSample("ApplyUVs");
             msh.SetVertexBufferData(m_Data, 0, 0, m_Data.Length, stream, flags);
             Profiler.EndSample();
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (m_Data.IsCreated)
             {
@@ -125,7 +158,7 @@ namespace GLTFast
                     {
                         var jobUv = new Jobs.ConvertUVsFloatToFloatInterleavedJob
                         {
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : 8,
+                            inputByteStride = (inputByteStride > 0) ? inputByteStride : sizeof(float2),
                             input = (byte*)input,
                             outputByteStride = outputByteStride,
                             result = output
@@ -187,7 +220,7 @@ namespace GLTFast
                         var job = new Jobs.ConvertUVsInt16ToFloatInterleavedNormalizedJob
                         {
                             inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
-                            input = (System.Int16*)input,
+                            input = (short*)input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
@@ -198,7 +231,7 @@ namespace GLTFast
                         var job = new Jobs.ConvertUVsInt16ToFloatInterleavedJob
                         {
                             inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
-                            input = (System.Int16*)input,
+                            input = (short*)input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
