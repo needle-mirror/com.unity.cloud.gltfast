@@ -47,6 +47,16 @@ Built-In render pipe projects can optionally use the shader graphs instead of th
 
 For example, if you don't need PNG/Jpeg support (because you use only KTX&trade; 2.0 textures or no textures at all), you can disable the *Image Conversion* and *UnityWebRequestTexture* modules.
 
+## Performance Increase via Collections Package
+
+> [!CAUTION]
+> Don't apply this if your project or one of its packages (e.g. [Polyspatial 1.3]) has a dependency on [Collections] 1.4 or older. Unfortunately [Collections] version 1.5.0 introduced breaking changes that might lead to compiler errors otherwise.
+
+Projects running Editor versions 2020 or 2021 can increase the performance of certain low-level C# jobs by upgrading the [Collections] package to version 1.5.1 (or newer). *glTFast* then utilizes [IJobParallelForBatch] for increased loading speed.
+
+> [!NOTE]
+> Performance measurements showed that in Unity 2022 and later the Burst compiler has gotten so advanced that performance is excellent out-of-the-box and adjusting the [Collections] package versions makes little to no difference.
+
 ## Readable Mesh Data
 
 By default *Unity glTFast* discards mesh data after it was uploaded to the GPU to free up main memory (see [`markNoLongerReadable`](https://docs.unity3d.com/ScriptReference/Mesh.UploadMeshData.html)). You can disable this globally by using the scripting define `GLTFAST_KEEP_MESH_DATA`.
@@ -75,9 +85,10 @@ add `GLTFAST_EDITOR_IMPORT_OFF` to the *Scripting Define Symbols* in the *Player
 
 *KTX&trade;* and the KTX logo are trademarks of the [The Khronos Group Inc][khronos].
 
-[ImgConv]: https://docs.unity3d.com/2021.3/Documentation/ScriptReference/UnityEngine.ImageConversionModule.html
+[Collections]: https://docs.unity3d.com/Packages/com.unity.collections@1.5/manual/index.html
+[IJobParallelForBatch]: https://docs.unity3d.com/Packages/com.unity.collections@1.5/api/Unity.Jobs.IJobParallelForBatch.html?q=IJobParallelForBatch
 [Khronos]: https://www.khronos.org
 [MRTK]: https://github.com/microsoft/MixedRealityToolkit-Unity
+[Polyspatial 1.3]: https://docs.unity3d.com/Packages/com.unity.polyspatial.visionos@1.3/manual/index.html
 [shader-variants]: https://docs.unity3d.com/Manual/shader-variants.html
 [Unity]: https://unity.com
-[uwrt]: https://docs.unity3d.com/2021.3/Documentation/ScriptReference/UnityEngine.UnityWebRequestTextureModule.html

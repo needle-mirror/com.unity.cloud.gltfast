@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.10.1] - 2025-01-09
+
+### Added
+- Test for `ConvertBoneWeightsUInt8ToFloatInterleavedJob`
+- Test for `ConvertBoneWeightsUInt16ToFloatInterleavedJob`
+- *BoundsTests* which certifies correct mesh bounds.
+
+### Changed
+- Downgraded package dependencies to version bundled with Editor.
+  - `com.unity.collections` to version `1.2.4` (from `1.5.1`)
+  - `com.unity.mathematics` to version `1.2.6` (from `1.3.1`)
+- When a position accessor lacks min/max properties, the corresponding error message is communicated via the `ICodeLogger` instead of a plain console log.
+
+### Fixed
+- Build error when used along with packages that depend on `com.unity.collections` versions older than 1.5 (e.g. Polyspatial 1.x; fixes [#730](https://github.com/atteneder/glTFast/issues/730)).
+- Invalid mesh bounds on meshes with one submesh (fixes [#743](https://github.com/atteneder/glTFast/issues/743)).
+
+### Removed
+
+
+### Deprecated
+
+
+### Security
+
+
+
 ## [6.10.0] - 2024-12-16
 
 ### Added

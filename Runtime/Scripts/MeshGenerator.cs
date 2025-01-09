@@ -332,7 +332,7 @@ namespace GLTFast
             Profiler.EndSample();
             msh.subMeshCount = m_Indices.Length;
             indexCount = 0;
-            var boundsAreValid = true;
+            Bounds bounds = default;
             for (var i = 0; i < m_Indices.Length; i++)
             {
                 Profiler.BeginSample("SetIndexBufferData");
@@ -342,7 +342,7 @@ namespace GLTFast
                 Profiler.BeginSample("SetSubMesh");
                 var vertexBufferIndex = m_SubMeshAssignments != null ? m_SubMeshAssignments[i].VertexBufferIndex : i;
                 m_VertexData.GetVertexRange(vertexBufferIndex, out var baseVertex, out var vertexCount);
-                boundsAreValid &= m_VertexData.TryGetBounds(vertexBufferIndex, out var bounds);
+                var subMeshBoundsValid = m_VertexData.TryGetBounds(vertexBufferIndex, out var subMeshBounds);
                 var subMeshDescriptor = new SubMeshDescriptor
                 {
                     indexStart = indexCount,
@@ -351,12 +351,35 @@ namespace GLTFast
                     baseVertex = baseVertex,
                     firstVertex = baseVertex,
                     vertexCount = vertexCount,
-                    bounds = bounds
+                    bounds = subMeshBounds
                 };
-                msh.SetSubMesh(i, subMeshDescriptor, defaultMeshUpdateFlags);
+                msh.SetSubMesh(
+                    i,
+                    subMeshDescriptor,
+                    subMeshBoundsValid
+                        ? defaultMeshUpdateFlags
+                        : defaultMeshUpdateFlags & ~MeshUpdateFlags.DontRecalculateBounds
+                    );
+                if (!subMeshBoundsValid)
+                {
+                    subMeshDescriptor = msh.GetSubMesh(i);
+                    subMeshBounds = subMeshDescriptor.bounds;
+                }
+
+                if (i == 0)
+                {
+                    bounds = subMeshBounds;
+                }
+                else
+                {
+                    bounds.Encapsulate(subMeshBounds);
+                }
                 Profiler.EndSample();
                 indexCount += m_Indices[i].Length;
             }
+
+            msh.bounds = bounds;
+
             Profiler.EndSample();
 
             if (m_Topology == MeshTopology.Triangles || m_Topology == MeshTopology.Quads)
@@ -373,16 +396,6 @@ namespace GLTFast
                     msh.RecalculateTangents();
                     Profiler.EndSample();
                 }
-            }
-
-            if (!boundsAreValid)
-            {
-                Profiler.BeginSample("RecalculateBounds");
-#if DEBUG
-                Debug.LogError("Bounds have to be recalculated (slow operation). Check if position accessors have proper min/max values");
-#endif
-                msh.RecalculateBounds();
-                Profiler.EndSample();
             }
 
             if (m_MorphTargetsGenerator != null)

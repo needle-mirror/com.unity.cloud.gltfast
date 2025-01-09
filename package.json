@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.10.0",
+  "version": "6.10.1",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -18,24 +18,24 @@
   "dependencies": {
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
-    "com.unity.mathematics": "1.3.1",
+    "com.unity.mathematics": "1.2.6",
     "com.unity.burst": "1.8.4",
-    "com.unity.collections": "1.5.1"
+    "com.unity.collections": "1.2.4"
   },
   "relatedPackages": {
     "com.unity.cloud.gltfast.tests": "0.0.0"
   },
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n- Extended access to meshes.\n  - `IGltfReadable.GetSourceMesh` returns source (de-serialized glTF) mesh.\n  - `GltfImportBase.Meshes` to retrieve all imported meshes.\n  - `GltfImportBase.GetMeshCount` returns the number of imported meshes per glTF mesh.\n  - `GltfImportBase.GetMeshes` to iterate the imported meshes of a single glTF mesh.\n  - `GltfImportBase.GetMesh` to access a single imported meshes.\n- Test asset *SubMesh*.\n- (CI) Automatically generated CI jobs (via Wrench/RecipeEngine; required for PackageWorks).\n- (CI) Renovate action to auto-update dependencies in CI jobs.\n- (CI) Renovate validation action.\n- `JpgQuality` option in `ExportSettings` for finer control of jpg image exports.\n- Project versions to test projects.\n\n### Changed\n- Mesh primitives of equal vertex buffer layout will result in a single Unity mesh with multiple sub-meshes instead of multiple Unity meshes (fixes [#153](https://github.com/atteneder/glTFast/issues/153)).\n\n### Deprecated\n- `IGltfReadable.GetAccessor` (replaced by `IGltfReadable.GetAccessorData`).\n- `GltfImportBase.GetMeshes` (replaced by `GltfImportBase.Meshes`).\n\n### Fixed\n- Preserve per-submesh bounding box.\n- `GltfAsset` properly cleans up scene instance's `Animation` component, which fixes repeated loading of animated glTFs."
+    "changelog": "### Added\n- Test for `ConvertBoneWeightsUInt8ToFloatInterleavedJob`\n- Test for `ConvertBoneWeightsUInt16ToFloatInterleavedJob`\n- *BoundsTests* which certifies correct mesh bounds.\n\n### Changed\n- Downgraded package dependencies to version bundled with Editor.\n  - `com.unity.collections` to version `1.2.4` (from `1.5.1`)\n  - `com.unity.mathematics` to version `1.2.6` (from `1.3.1`)\n- When a position accessor lacks min/max properties, the corresponding error message is communicated via the `ICodeLogger` instead of a plain console log.\n\n### Fixed\n- Build error when used along with packages that depend on `com.unity.collections` versions older than 1.5 (e.g. Polyspatial 1.x; fixes [#730](https://github.com/atteneder/glTFast/issues/730)).\n- Invalid mesh bounds on meshes with one submesh (fixes [#743](https://github.com/atteneder/glTFast/issues/743)).\n\n### Removed\n\n\n### Deprecated\n\n\n### Security"
   },
   "upmCi": {
-    "footprint": "47926e3b4923ab02053f72139750c51ec235908c"
+    "footprint": "03d51c9a4b88c2d26265ab79107aff0445d46fdd"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.10/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "292fd879bc504ae57214b1484f2652b855732183"
+    "revision": "2859d6e039100c3ea2955e5b4b23501ed9c9f707"
   }
 }
