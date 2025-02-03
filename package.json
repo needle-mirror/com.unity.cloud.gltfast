@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.10.1",
+  "version": "6.10.2",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -27,15 +27,15 @@
   },
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n- Test for `ConvertBoneWeightsUInt8ToFloatInterleavedJob`\n- Test for `ConvertBoneWeightsUInt16ToFloatInterleavedJob`\n- *BoundsTests* which certifies correct mesh bounds.\n\n### Changed\n- Downgraded package dependencies to version bundled with Editor.\n  - `com.unity.collections` to version `1.2.4` (from `1.5.1`)\n  - `com.unity.mathematics` to version `1.2.6` (from `1.3.1`)\n- When a position accessor lacks min/max properties, the corresponding error message is communicated via the `ICodeLogger` instead of a plain console log.\n\n### Fixed\n- Build error when used along with packages that depend on `com.unity.collections` versions older than 1.5 (e.g. Polyspatial 1.x; fixes [#730](https://github.com/atteneder/glTFast/issues/730)).\n- Invalid mesh bounds on meshes with one submesh (fixes [#743](https://github.com/atteneder/glTFast/issues/743)).\n\n### Removed\n\n\n### Deprecated\n\n\n### Security"
+    "changelog": "### Added\n- (Importer) *Textures Readable* checkbox in the imnporter inspector (*Textures* section).\n- (Export) Error message when attempting to export with unsupported meshopt compression.\n- (Tests) Runtime import performance tests.\n- (Tests) Procedurally generated glTFs for testing purpose.\n- (Tests) Editor export tests.\n\n### Changed\n- (Tests) Reduced jobs performance test duration by lowering buffer sizes and switching to dynamic measurement counts.\n- (Tests) Performance tests are not run, unless the `RUN_PERFORMANCE_TESTS` scripting define is set.\n\n### Fixed\n- Performance test compilation if *Collections* package >= 1.5.0 is not installed.\n- Inconsistent profiler markers.\n- (Export) Unity Editor not responding anymore after export glTF with non-readable meshes.\n- (Export) Missing `inverseBindMatrices`/`bindPoses` on skinned meshes when exporting with Draco compression.\n- (CI) Ensuring the development documentation and the `Tools` code is checked for code formatting as well.\n- Compilation for `ICodeLogger` implementors by adding a default implementation for `Log` (works for Unity 2021 LTS and newer).\n\n### Removed\n\n### Deprecated\n\n### Security"
   },
   "upmCi": {
-    "footprint": "03d51c9a4b88c2d26265ab79107aff0445d46fdd"
+    "footprint": "1047daee834f4039eca3bde663876f42f4eee16d"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.10/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "2859d6e039100c3ea2955e5b4b23501ed9c9f707"
+    "revision": "cdb28db15d11a0313338b750ca2111987f3f13ca"
   }
 }
