@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.10.3] - 2025-02-21
+
+### Added
+
+### Changed
+
+### Fixed
+- (Import) Morph targets on multi-primitive meshes (where primitives reference identical vertex buffers; fixes [#755](https://github.com/atteneder/glTFast/issues/755)).
+
+### Removed
+
+### Deprecated
+
+### Security
+
 ## [6.10.2] - 2025-02-03
 
 ### Added
@@ -24,12 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (Export) Missing `inverseBindMatrices`/`bindPoses` on skinned meshes when exporting with Draco compression.
 - (CI) Ensuring the development documentation and the `Tools` code is checked for code formatting as well.
 - Compilation for `ICodeLogger` implementors by adding a default implementation for `Log` (works for Unity 2021 LTS and newer).
-
-### Removed
-
-### Deprecated
-
-### Security
 
 ## [6.10.1] - 2025-01-09
 
