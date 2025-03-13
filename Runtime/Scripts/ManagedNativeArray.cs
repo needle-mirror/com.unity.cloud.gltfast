@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Unity Technologies and the glTFast authors
+// SPDX-FileCopyrightText: 2025 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
@@ -7,7 +7,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
-namespace GLTFast.Export
+namespace GLTFast
 {
 
     /// <summary>
@@ -15,7 +15,7 @@ namespace GLTFast.Export
     /// </summary>
     /// <typeparam name="TIn">Type of items in input array.</typeparam>
     /// <typeparam name="TOut">Type of items in output NativeArray (might differ from input type TIn).</typeparam>
-    public class ManagedNativeArray<TIn, TOut> : IDisposable
+    public sealed class ManagedNativeArray<TIn, TOut> : IDisposable
         where TIn : unmanaged
         where TOut : unmanaged
     {
@@ -63,18 +63,7 @@ namespace GLTFast.Export
         /// </summary>
         public void Dispose()
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Disposes the managed NativeArray&lt;TOut&gt; and unpins the underlying managed array.
-        /// </summary>
-        /// <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true)
-        /// or from a finalizer (its value is false).</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing && m_Pinned)
+            if (m_Pinned)
             {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                 AtomicSafetyHandle.Release(m_SafetyHandle);

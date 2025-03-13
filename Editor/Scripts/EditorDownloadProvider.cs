@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Unity.Collections;
 using UnityEditor;
 using UnityEngine;
 
@@ -44,14 +45,19 @@ namespace GLTFast.Editor
 #pragma warning restore 1998
     }
 
-    class SyncFileLoader : IDownload
+    class SyncFileLoader : IDownload, INativeDownload
     {
+        ManagedNativeArray<byte, byte> m_ManagedNativeArray;
+
         public SyncFileLoader(Uri url)
         {
             var path = url.OriginalString;
             if (File.Exists(path))
             {
                 Data = File.ReadAllBytes(path);
+                // TODO: Is there a better way to load a file into a NativeArray, like AsyncReadManager?
+                m_ManagedNativeArray = new ManagedNativeArray<byte, byte>(Data);
+                NativeData = m_ManagedNativeArray.nativeArray.AsReadOnly();
             }
             else
             {
@@ -68,7 +74,9 @@ namespace GLTFast.Editor
         public string Error { get; protected set; }
         public byte[] Data { get; private set; }
 
-        public string Text => System.Text.Encoding.UTF8.GetString(Data);
+        public NativeArray<byte>.ReadOnly NativeData { get; private set; }
+
+        public string Text => Data != null ? System.Text.Encoding.UTF8.GetString(Data) : null;
 
         public bool? IsBinary
         {
@@ -76,19 +84,31 @@ namespace GLTFast.Editor
             {
                 if (Success)
                 {
-                    return GltfGlobals.IsGltfBinary(Data);
+                    return GltfGlobals.IsGltfBinary(NativeData);
                 }
                 return null;
             }
         }
 
-        public virtual void Dispose()
+        public void Dispose()
         {
-            Data = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_ManagedNativeArray?.Dispose();
+                m_ManagedNativeArray = null;
+                Data = null;
+                NativeData = default;
+            }
         }
     }
 
-    class SyncTextureLoader : SyncFileLoader, ITextureDownload
+    sealed class SyncTextureLoader : SyncFileLoader, ITextureDownload
     {
 
         public Texture2D Texture { get; private set; }
@@ -105,9 +125,9 @@ namespace GLTFast.Editor
             }
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            base.Dispose();
+            base.Dispose(disposing);
             Texture = null;
         }
     }

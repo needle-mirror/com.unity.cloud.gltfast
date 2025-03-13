@@ -20,23 +20,9 @@ gltf.Url = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/ma
 
 ### Load from byte array
 
-In case you want to handle download/file loading yourself, you can load glTF binary files directly from C# byte[] like so:
+glTF data can be loaded directly from memory using [GltfImport.Load][GltfImportLoad] overloads that accept data in form of [NativeArray&lt;byte&gt;.ReadOnly][NativeArrayByteReadOnly] or `byte[]`.
 
-```csharp
-async void LoadGltfBinaryFromMemory() {
-    var filePath = "/path/to/file.glb";
-    byte[] data = File.ReadAllBytes(filePath);
-    var gltf = new GltfImport();
-    bool success = await gltf.LoadGltfBinary(
-        data,
-        // The URI of the original data is important for resolving relative URIs within the glTF
-        new Uri(filePath)
-        );
-    if (success) {
-        success = await gltf.InstantiateMainSceneAsync(transform);
-    }
-}
-```
+[!code-cs [load-gltf-from-memory](../DocExamples/LoadGltfFromMemory.cs#LoadGltfFromMemory)]
 
 > [!TIP]
 > Provide the original URI of glTF-binary file as `uri` parameter to [LoadGltfBinary][GltfImportLoadGltfBinary], so that it is able to resolve relative URIs in non-self-contained glTFs.
@@ -301,6 +287,7 @@ When you no longer need a loaded instance of a glTF scene you might want to remo
 [GltfImport]: xref:GLTFast.GltfImport
 [GltfImportCtor]: xref:GLTFast.GltfImport.#ctor*
 [GltfImportDispose]: xref:GLTFast.GltfImport.Dispose
+[GltfImportLoad]: xref:GLTFast.GltfImportBase.Load*
 [GltfImportLoadGltfBinary]: xref:GLTFast.GltfImportBase.LoadGltfBinary*
 [GameObjectInstantiator]: xref:GLTFast.GameObjectInstantiator
 [GameObjectInstantiatorCtor]: xref:GLTFast.GameObjectInstantiator.#ctor*
@@ -313,6 +300,7 @@ When you no longer need a loaded instance of a glTF scene you might want to remo
 [InstantiationSettings]: xref:GLTFast.InstantiationSettings
 [Khronos]: https://www.khronos.org
 [LogMessages]: xref:GLTFast.Logging.LogMessages
+[NativeArrayByteReadOnly]: xref:Unity.Collections.NativeArray`1.ReadOnly
 [GameObjectSceneInstance]: xref:GLTFast.GameObjectSceneInstance
 [SceneObjectCreation]: xref:GLTFast.SceneObjectCreation
 [Unity]: https://unity.com

@@ -4,20 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.10.3] - 2025-02-21
+## [6.11.0] - 2025-03-13
 
 ### Added
+- [GltfImport.Load](xref:GLTFast.GltfImportBase.Load(Unity.Collections.NativeArray{System.Byte}.ReadOnly,Uri,GLTFast.ImportSettings,CancellationToken)) overload that accept glTF data in form of [NativeArray&lt;byte&gt;.ReadOnly](xref:Unity.Collections.NativeArray`1.ReadOnly).
+- [INativeDownload](xref:GLTFast.Loading.INativeDownload), which can be used to expand [IDownload](xref:GLTFast.Loading.IDownload) implementations to provide access to downloaded data directly without creating a copy in managed memory.
+- Content-based glTF JSON vs. glTF-Binary detection (limited to Unity 2021 LTS or newer; resolves [#193](https://github.com/atteneder/glTFast/issues/193)).
 
 ### Changed
+- (Performance) By default glTF and KTX data is not copied to managed memory implicitly when loading glTFs (true for Unity 2021 LTS or newer).
+
+### Deprecated
+- [GltfImport.LoadGltfBinary](xref:GLTFast.GltfImportBase.LoadGltfBinary*) (in favor of the generic [GltfImport.Load](xref:GLTFast.GltfImportBase.Load*))
+
+## [6.10.3] - 2025-02-21
 
 ### Fixed
 - (Import) Morph targets on multi-primitive meshes (where primitives reference identical vertex buffers; fixes [#755](https://github.com/atteneder/glTFast/issues/755)).
-
-### Removed
-
-### Deprecated
-
-### Security
 
 ## [6.10.2] - 2025-02-03
 
@@ -362,6 +365,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added proper root namespace to all assembly definitions
 - License and copyright notices
 - (Export) Increased performance due to concurrent buffer conversions
+- Support for KTX (Khronos Texture) is now provided by [*KTX for Unity* (com.unity.cloud.ktx)][KtxForUnity], which is a fork of and replaces [*KtxUnity* (com.atteneder.ktx)][KtxUnity].
 
 ## [5.0.4] - 2023-03-30
 

@@ -3,7 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
-
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.Profiling;
@@ -52,7 +52,11 @@ namespace GLTFast.Loading
     /// <summary>
     /// Default <see cref="IDownload"/> implementation that loads URIs via <see cref="UnityWebRequest"/>
     /// </summary>
-    public class AwaitableDownload : IDownload
+    public class AwaitableDownload :
+        IDownload
+#if UNITY_2021_3_OR_NEWER
+        ,INativeDownload
+#endif
     {
         const string k_MimeTypeGltfBinary = "model/gltf-binary";
         const string k_MimeTypeGltf = "model/gltf+json";
@@ -123,6 +127,11 @@ namespace GLTFast.Loading
             }
         }
 
+#if UNITY_2021_3_OR_NEWER
+        /// <inheritdoc />
+        public NativeArray<byte>.ReadOnly NativeData => m_Request?.downloadHandler.nativeData ?? default;
+#endif
+
         /// <summary>
         /// Downloaded data as string
         /// </summary>
@@ -145,7 +154,12 @@ namespace GLTFast.Loading
                     if (contentType == k_MimeTypeGltf)
                         return false;
                 }
+
+#if UNITY_2021_3_OR_NEWER
+                return GltfGlobals.IsGltfBinary(NativeData);
+#else
                 return null;
+#endif
             }
         }
 
@@ -154,8 +168,22 @@ namespace GLTFast.Loading
         /// </summary>
         public void Dispose()
         {
-            m_Request.Dispose();
-            m_Request = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases previously allocated resources.
+        /// </summary>
+        /// <param name="disposing">Indicates whether the method call comes from a Dispose method (its value is true)
+        /// or from a finalizer (its value is false).</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_Request.Dispose();
+                m_Request = null;
+            }
         }
     }
 

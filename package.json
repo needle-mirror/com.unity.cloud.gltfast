@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.10.3",
+  "version": "6.11.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -27,15 +27,15 @@
   },
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n\n### Changed\n\n### Fixed\n- (Import) Morph targets on multi-primitive meshes (where primitives reference identical vertex buffers; fixes [#755](https://github.com/atteneder/glTFast/issues/755)).\n\n### Removed\n\n### Deprecated\n\n### Security"
+    "changelog": "### Added\n- [GltfImport.Load](xref:GLTFast.GltfImportBase.Load(Unity.Collections.NativeArray{System.Byte}.ReadOnly,Uri,GLTFast.ImportSettings,CancellationToken)) overload that accept glTF data in form of [NativeArray&lt;byte&gt;.ReadOnly](xref:Unity.Collections.NativeArray`1.ReadOnly).\n- [INativeDownload](xref:GLTFast.Loading.INativeDownload), which can be used to expand [IDownload](xref:GLTFast.Loading.IDownload) implementations to provide access to downloaded data directly without creating a copy in managed memory.\n- Content-based glTF JSON vs. glTF-Binary detection (limited to Unity 2021 LTS or newer; resolves [#193](https://github.com/atteneder/glTFast/issues/193)).\n\n### Changed\n- (Performance) By default glTF and KTX data is not copied to managed memory implicitly when loading glTFs (true for Unity 2021 LTS or newer).\n\n### Deprecated\n- [GltfImport.LoadGltfBinary](xref:GLTFast.GltfImportBase.LoadGltfBinary*) (in favor of the generic [GltfImport.Load](xref:GLTFast.GltfImportBase.Load*))"
   },
   "upmCi": {
-    "footprint": "6fa6c35c7e030c0962b83be9e7118424d844ec95"
+    "footprint": "bae628cff19aad91ef7f26ecdf4473cfbf95a932"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.10/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.11/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "d7171dd32f98f7ab8cd38cc01a651fba4d15ae0d"
+    "revision": "d765fa298a6b9ecd9e7e0fa1b7f4167c55ba3901"
   }
 }
