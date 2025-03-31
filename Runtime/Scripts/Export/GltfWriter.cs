@@ -560,8 +560,8 @@ namespace GLTFast.Export
             const uint chunkOverhead = 8; // 4 bytes chunk length + 4 bytes chunk type (uint each)
             if (isBinary)
             {
-                outStream.Write(BitConverter.GetBytes(GltfGlobals.GltfBinaryMagic));
-                outStream.Write(BitConverter.GetBytes((uint)2));
+                await WriteBytesToStream(outStream, BitConverter.GetBytes(GltfGlobals.GltfBinaryMagic));
+                await WriteBytesToStream(outStream, BitConverter.GetBytes((uint)2));
 
                 MemoryStream jsonStream = null;
                 uint jsonLength;
@@ -602,10 +602,10 @@ namespace GLTFast.Export
                     outStream.Seek(8, SeekOrigin.Begin);
                 }
 
-                outStream.Write(BitConverter.GetBytes(totalLength));
+                await WriteBytesToStream(outStream, BitConverter.GetBytes(totalLength));
 
-                outStream.Write(BitConverter.GetBytes((uint)(jsonLength + jsonPad)));
-                outStream.Write(BitConverter.GetBytes((uint)ChunkFormat.Json));
+                await WriteBytesToStream(outStream, BitConverter.GetBytes((uint)(jsonLength + jsonPad)));
+                await WriteBytesToStream(outStream, BitConverter.GetBytes((uint)ChunkFormat.Json));
 
                 if (outStreamCanSeek)
                 {
@@ -624,8 +624,8 @@ namespace GLTFast.Export
 
                 if (hasBufferContent)
                 {
-                    outStream.Write(BitConverter.GetBytes((uint)(m_BufferStream.Length + binPad)));
-                    outStream.Write(BitConverter.GetBytes((uint)ChunkFormat.Binary));
+                    await WriteBytesToStream(outStream, BitConverter.GetBytes((uint)(m_BufferStream.Length + binPad)));
+                    await WriteBytesToStream(outStream, BitConverter.GetBytes((uint)ChunkFormat.Binary));
                     var ms = (MemoryStream)m_BufferStream;
                     ms.WriteTo(outStream);
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -653,6 +653,20 @@ namespace GLTFast.Export
 
             Dispose();
             return true;
+        }
+
+        static
+#if UNITY_2021_3_OR_NEWER
+            async
+#endif
+            Task WriteBytesToStream(Stream outStream, byte[] bytes)
+        {
+#if UNITY_2021_3_OR_NEWER
+            await outStream.WriteAsync(bytes);
+#else
+            outStream.Write(bytes);
+            return Task.CompletedTask;
+#endif
         }
 
         async Task WriteJsonToStream(Stream outStream)
@@ -1212,126 +1226,7 @@ namespace GLTFast.Export
                 return;
             }
 
-            int indexBufferViewId;
-            if (uMesh.indexFormat == IndexFormat.UInt16)
-            {
-                var indexData16 =
-#if ASYNC_MESH_DATA
-                    await
-#endif
-                        ((IMeshData<ushort>)meshData).GetIndexData();
-                if (topology.Value == MeshTopology.Quads)
-                {
-                    Profiler.BeginSample("IndexJobUInt16QuadsSchedule");
-                    var quadCount = indexData16.Length / 4;
-                    var destIndices = new NativeArray<ushort>(quadCount * 6, Allocator.TempJob);
-                    var job = new ExportJobs.ConvertIndicesQuadFlippedJob<ushort>
-                    {
-                        input = indexData16,
-                        result = destIndices
-                    }.Schedule(quadCount, k_DefaultInnerLoopBatchCount);
-                    Profiler.EndSample();
-                    while (!job.IsCompleted)
-                    {
-                        await Task.Yield();
-                    }
-                    Profiler.BeginSample("IndexJobUInt16QuadsPostWork");
-                    job.Complete();
-                    indexBufferViewId = WriteBufferViewToBuffer(
-                        destIndices.Reinterpret<byte>(sizeof(ushort)),
-                        BufferViewTarget.ElementArrayBuffer,
-                        byteAlignment: sizeof(ushort)
-                        );
-                    destIndices.Dispose();
-                    Profiler.EndSample();
-                }
-                else
-                {
-                    Profiler.BeginSample("IndexJobUInt16TrisSchedule");
-                    var triangleCount = indexData16.Length / 3;
-                    var destIndices = new NativeArray<ushort>(triangleCount * 3, Allocator.TempJob);
-                    var job = new ExportJobs.ConvertIndicesFlippedJob<ushort>
-                    {
-                        input = indexData16,
-                        result = destIndices
-                    }.Schedule(triangleCount, k_DefaultInnerLoopBatchCount);
-                    Profiler.EndSample();
-                    while (!job.IsCompleted)
-                    {
-                        await Task.Yield();
-                    }
-                    Profiler.BeginSample("IndexJobUInt16TrisPostWork");
-                    job.Complete();
-                    indexBufferViewId = WriteBufferViewToBuffer(
-                        destIndices.Reinterpret<byte>(sizeof(ushort)),
-                        BufferViewTarget.ElementArrayBuffer,
-                        byteAlignment: sizeof(ushort)
-                        );
-                    destIndices.Dispose();
-                    Profiler.EndSample();
-                }
-                indexData16.Dispose();
-            }
-            else
-            {
-                var indexData32 =
-#if ASYNC_MESH_DATA
-                    await
-#endif
-                    ((IMeshData<uint>)meshData).GetIndexData();
-                if (topology.Value == MeshTopology.Quads)
-                {
-                    Profiler.BeginSample("IndexJobUInt32QuadsSchedule");
-                    var quadCount = indexData32.Length / 4;
-                    var destIndices = new NativeArray<uint>(quadCount * 6, Allocator.TempJob);
-                    var job = new ExportJobs.ConvertIndicesQuadFlippedJob<uint>
-                    {
-                        input = indexData32,
-                        result = destIndices
-                    }.Schedule(quadCount, k_DefaultInnerLoopBatchCount);
-                    Profiler.EndSample();
-                    while (!job.IsCompleted)
-                    {
-                        await Task.Yield();
-                    }
-                    Profiler.BeginSample("IndexJobUInt32QuadsPostWork");
-                    job.Complete();
-                    indexBufferViewId = WriteBufferViewToBuffer(
-                        destIndices.Reinterpret<byte>(sizeof(uint)),
-                        BufferViewTarget.ElementArrayBuffer,
-                        byteAlignment: sizeof(uint)
-                        );
-                    destIndices.Dispose();
-                    Profiler.EndSample();
-                }
-                else
-                {
-                    Profiler.BeginSample("IndexJobUInt32TrisSchedule");
-                    var triangleCount = indexData32.Length / 3;
-                    var destIndices = new NativeArray<uint>(indexData32.Length, Allocator.TempJob);
-                    var job = new ExportJobs.ConvertIndicesFlippedJob<uint>
-                    {
-                        input = indexData32,
-                        result = destIndices
-                    }.Schedule(triangleCount, k_DefaultInnerLoopBatchCount);
-                    Profiler.EndSample();
-                    while (!job.IsCompleted)
-                    {
-                        await Task.Yield();
-                    }
-                    Profiler.BeginSample("IndexJobUInt32TrisPostWork");
-                    job.Complete();
-                    indexBufferViewId = WriteBufferViewToBuffer(
-                        destIndices.Reinterpret<byte>(sizeof(uint)),
-                        BufferViewTarget.ElementArrayBuffer,
-                        byteAlignment: sizeof(uint)
-                        );
-                    destIndices.Dispose();
-                    Profiler.EndSample();
-                }
-
-                indexData32.Dispose();
-            }
+            var indexBufferViewId = await BakeMeshIndices(meshData, uMesh, topology);
 
             foreach (var accessor in indexAccessors)
             {
@@ -1456,6 +1351,162 @@ namespace GLTFast.Export
                     }
                 }
             }
+        }
+
+        async Task<int> BakeMeshIndices(IMeshData meshData, UnityEngine.Mesh uMesh, MeshTopology? topology)
+        {
+            NativeArray<byte> indices;
+            if (uMesh.indexFormat == IndexFormat.UInt16)
+            {
+                using var indexData16 =
+#if ASYNC_MESH_DATA
+                    await
+#endif
+                    ((IMeshData<ushort>)meshData).GetIndexData();
+                NativeArray<ushort> destIndices;
+                JobHandle job = default;
+                if (topology.Value == MeshTopology.Quads)
+                {
+                    Profiler.BeginSample("IndexJobUInt16QuadsSchedule");
+                    var quadCount = indexData16.Length / 4;
+                    destIndices = new NativeArray<ushort>(quadCount * 6, Allocator.TempJob);
+                    JobHandle ConvertSubmeshIndices(int submeshIndex, JobHandle dependency)
+                    {
+                        var submesh = uMesh.GetSubMesh(submeshIndex);
+                        Assert.AreEqual(0, submesh.indexStart % 4);
+                        Assert.AreEqual(0, submesh.indexCount % 4);
+                        var dstStart = submesh.indexStart / 4 * 6;
+                        var dstLength = submesh.indexCount / 4 * 6;
+                        job = new ExportJobs.ConvertIndicesQuadFlippedJobUInt16
+                        {
+                            input = indexData16.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            result = destIndices.GetSubArray(dstStart, dstLength),
+                            baseVertexOffset = (ushort)submesh.baseVertex
+                        }.Schedule(submesh.indexCount / 4, k_DefaultInnerLoopBatchCount, dependency);
+                        return job;
+                    }
+
+                    job = ConvertSubmeshIndices(0, job);
+                    for (var i = 1; i < uMesh.subMeshCount; i++)
+                    {
+                        job = ConvertSubmeshIndices(i, job);
+                    }
+                    Profiler.EndSample();
+                }
+                else
+                {
+                    Profiler.BeginSample("IndexJobUInt16TrisSchedule");
+                    destIndices = new NativeArray<ushort>(indexData16.Length, Allocator.TempJob);
+                    JobHandle ConvertSubmeshIndices(int submeshIndex, JobHandle dependency)
+                    {
+                        var submesh = uMesh.GetSubMesh(submeshIndex);
+                        Assert.AreEqual(0, submesh.indexStart % 3);
+                        Assert.AreEqual(0, submesh.indexCount % 3);
+                        job = new ExportJobs.ConvertIndicesFlippedJobUInt16
+                        {
+                            input = indexData16.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            result = destIndices.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            baseVertexOffset = (ushort)submesh.baseVertex
+                        }.Schedule(submesh.indexCount / 3, k_DefaultInnerLoopBatchCount, dependency);
+                        return job;
+                    }
+
+                    job = ConvertSubmeshIndices(0, job);
+                    for (var i = 1; i < uMesh.subMeshCount; i++)
+                    {
+                        job = ConvertSubmeshIndices(i, job);
+                    }
+                    Profiler.EndSample();
+                }
+                while (!job.IsCompleted)
+                {
+                    await Task.Yield();
+                }
+                job.Complete();
+                indices = destIndices.Reinterpret<byte>(sizeof(ushort));
+            }
+            else
+            {
+                using var indexData32 =
+#if ASYNC_MESH_DATA
+                    await
+#endif
+                    ((IMeshData<uint>)meshData).GetIndexData();
+                NativeArray<uint> destIndices;
+                JobHandle job = default;
+                if (topology.Value == MeshTopology.Quads)
+                {
+                    Profiler.BeginSample("IndexJobUInt32QuadsSchedule");
+                    var quadCount = indexData32.Length / 4;
+                    destIndices = new NativeArray<uint>(quadCount * 6, Allocator.TempJob);
+
+                    JobHandle ConvertSubmeshIndices(int submeshIndex, JobHandle dependency)
+                    {
+                        var submesh = uMesh.GetSubMesh(submeshIndex);
+                        Assert.AreEqual(0, submesh.indexStart % 4);
+                        Assert.AreEqual(0, submesh.indexCount % 4);
+                        var dstStart = submesh.indexStart / 4 * 6;
+                        var dstLength = submesh.indexCount / 4 * 6;
+                        job = new ExportJobs.ConvertIndicesQuadFlippedJobUInt32
+                        {
+                            input = indexData32.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            result = destIndices.GetSubArray(dstStart, dstLength),
+                            baseVertexOffset = (ushort)submesh.baseVertex
+                        }.Schedule(submesh.indexCount / 4, k_DefaultInnerLoopBatchCount, dependency);
+                        return job;
+                    }
+
+                    job = ConvertSubmeshIndices(0, job);
+                    for (var i = 1; i < uMesh.subMeshCount; i++)
+                    {
+                        job = ConvertSubmeshIndices(i, job);
+                    }
+                    Profiler.EndSample();
+                }
+                else
+                {
+                    Profiler.BeginSample("IndexJobUInt32TrisSchedule");
+                    destIndices = new NativeArray<uint>(indexData32.Length, Allocator.TempJob);
+
+                    JobHandle ConvertSubmeshIndices(int submeshIndex, JobHandle dependency)
+                    {
+                        var submesh = uMesh.GetSubMesh(submeshIndex);
+                        Assert.AreEqual(0, submesh.indexStart % 3);
+                        Assert.AreEqual(0, submesh.indexCount % 3);
+                        job = new ExportJobs.ConvertIndicesFlippedJobUInt32
+                        {
+                            input = indexData32.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            result = destIndices.GetSubArray(submesh.indexStart, submesh.indexCount),
+                            baseVertexOffset = (uint)submesh.baseVertex
+                        }.Schedule(submesh.indexCount / 3, k_DefaultInnerLoopBatchCount, dependency);
+                        return job;
+                    }
+
+                    job = ConvertSubmeshIndices(0, job);
+                    for (var i = 1; i < uMesh.subMeshCount; i++)
+                    {
+                        job = ConvertSubmeshIndices(i, job);
+                    }
+                    Profiler.EndSample();
+                }
+                while (!job.IsCompleted)
+                {
+                    await Task.Yield();
+                }
+                job.Complete();
+
+                indices = destIndices.Reinterpret<byte>(sizeof(uint));
+            }
+
+            Profiler.BeginSample("IndexJobPostWork");
+            var indexBufferViewId = WriteBufferViewToBuffer(
+                indices,
+                BufferViewTarget.ElementArrayBuffer,
+                byteAlignment: sizeof(ushort)
+            );
+            indices.Dispose();
+            Profiler.EndSample();
+            return indexBufferViewId;
         }
 
         async Task ExportBindPoses(int meshId, UnityEngine.Mesh uMesh)

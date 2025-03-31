@@ -490,7 +490,9 @@ namespace GLTFast
 #endif
             var fs = new FileStream(localPath, FileMode.Open, FileAccess.Read);
             var result = await LoadStream(fs, uri, importSettings, cancellationToken);
+#if !UNITY_2021_3_OR_NEWER || !NET_STANDARD_2_1
             fs.Dispose();
+#endif
             return result;
         }
 
@@ -2270,34 +2272,28 @@ namespace GLTFast
                     }
 
                     var path = AnimationUtils.CreateAnimationPath(channel.Target.node,m_NodeNames,parentIndex);
-
                     var times = (NativeArray<float>) m_AccessorData[sampler.input];
-
                     var outputData = m_AccessorData[sampler.output];
-                    Assert.IsNotNull(outputData);
+                    var interpolationType = sampler.GetInterpolationType();
 
                     switch (channel.Target.GetPath()) {
                         case AnimationChannelBase.Path.Translation: {
-                            Assert.IsTrue(outputData is NativeArray<Vector3>);
-                            var values = (NativeArray<Vector3>) outputData;
-                            AnimationUtils.AddTranslationCurves(m_AnimationClips[i], path, times, values, sampler.GetInterpolationType());
+                            var values = CastOrCreateTypedBuffer<Vector3>(outputData, times.Length, interpolationType);
+                            AnimationUtils.AddTranslationCurves(m_AnimationClips[i], path, times, values, interpolationType);
                             break;
                         }
                         case AnimationChannelBase.Path.Rotation: {
-                            Assert.IsTrue(outputData is NativeArray<Quaternion>);
-                            var values = (NativeArray<Quaternion>) outputData;
-                            AnimationUtils.AddRotationCurves(m_AnimationClips[i], path, times, values, sampler.GetInterpolationType());
+                            var values = CastOrCreateTypedBuffer<Quaternion>(outputData, times.Length, interpolationType);
+                            AnimationUtils.AddRotationCurves(m_AnimationClips[i], path, times, values, interpolationType);
                             break;
                         }
                         case AnimationChannelBase.Path.Scale: {
-                            Assert.IsTrue(outputData is NativeArray<Vector3>);
-                            var values = (NativeArray<Vector3>) outputData;
-                            AnimationUtils.AddScaleCurves(m_AnimationClips[i], path, times, values, sampler.GetInterpolationType());
+                            var values = CastOrCreateTypedBuffer<Vector3>(outputData, times.Length, interpolationType);
+                            AnimationUtils.AddScaleCurves(m_AnimationClips[i], path, times, values, interpolationType);
                             break;
                         }
                         case AnimationChannelBase.Path.Weights: {
-                            Assert.IsTrue(outputData is NativeArray<float>);
-                            var values = (NativeArray<float>) outputData;
+                            var values = CastOrCreateTypedBuffer<float>(outputData, times.Length, interpolationType);
                             var node = Root.Nodes[channel.Target.node];
                             if (node.mesh < 0 || node.mesh >= Root.Meshes.Count) {
                                 break;
@@ -2308,7 +2304,7 @@ namespace GLTFast
                                 path,
                                 times,
                                 values,
-                                sampler.GetInterpolationType(),
+                                interpolationType,
                                 mesh.Extras?.targetNames
                             );
 
@@ -2328,7 +2324,7 @@ namespace GLTFast
                                     $"{path}/{primitiveName}",
                                     times,
                                     values,
-                                    sampler.GetInterpolationType(),
+                                    interpolationType,
                                     mesh.Extras?.targetNames
                                 );
                             }
@@ -2346,6 +2342,28 @@ namespace GLTFast
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Casts <paramref name="input"/> to the given type, or if unavailable allocates a temp buffer filled with 0-value data.
+        /// </summary>
+        /// <param name="input">Will be filled with 0-value data if unavailable.</param>
+        /// <param name="expectedLength">The expected length of the temp buffer.</param>
+        /// <param name="interpolationType">The <see cref="InterpolationType"/> of the expected data which might change
+        /// the resulting length of the output if the input was unavailable.</param>
+        /// <typeparam name="T">The expected type of the buffer.</typeparam>
+        /// <returns>A <see cref="NativeArray{T}"/>.</returns>
+        static NativeArray<T> CastOrCreateTypedBuffer<T>(IDisposable input, int expectedLength, InterpolationType interpolationType) where T : struct
+        {
+            if (input is null)
+            {
+                // InterpolationType.CubicSpline has 3 values per key (in-tangent, out-tangent and value).
+                var unknownOutputLength = expectedLength * (interpolationType == InterpolationType.CubicSpline ? 3 : 1);
+                return new NativeArray<T>(unknownOutputLength, Allocator.Temp);
+            }
+
+            Assert.IsTrue(input is NativeArray<T>);
+            return (NativeArray<T>)input;
         }
 
 #endif // UNITY_ANIMATION
@@ -2876,6 +2894,11 @@ namespace GLTFast
 
             instantiator.BeginScene(scene.name, scene.nodes);
 #if UNITY_ANIMATION
+            // TODO: this should be removed in favor of a cleaner way to access ImportSettings in the instantiator
+            // only available internally for now to avoid breaking changes
+            if (instantiator is GameObjectInstantiator gameObjectInstantiator)
+                gameObjectInstantiator.ImportSettings = m_Settings;
+
             instantiator.AddAnimation(m_AnimationClips);
 #endif
 

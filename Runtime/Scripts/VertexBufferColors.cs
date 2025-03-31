@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+using System.Collections.Generic;
+#endif
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -20,6 +23,9 @@ namespace GLTFast
         readonly ICodeLogger m_Logger;
 
         NativeArray<float4> m_Data;
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+        List<AtomicSafetyHandle> m_SafetyHandles;
+#endif
 
         public VertexBufferColors(int vertexCount, ICodeLogger logger)
         {
@@ -43,12 +49,26 @@ namespace GLTFast
                 m_Logger?.Error(LogCode.SparseAccessor, "color");
             }
 
+            var colorDestination = m_Data.GetSubArray(offset, colorAcc.count);
+
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (offset > 0)
+            {
+                // On multi-primitive meshes color jobs may only write into the same destination if we set dedicated
+                // safety handles for each sub-array following the first one (offset==0).
+                var safetyHandle = AtomicSafetyHandle.Create();
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref colorDestination, safetyHandle);
+                m_SafetyHandles ??= new List<AtomicSafetyHandle>();
+                m_SafetyHandles.Add(safetyHandle);
+            }
+#endif
+
             var h = GetColors32Job(
                 data,
                 colorAcc.componentType,
                 colorAcc.GetAttributeType(),
                 byteStride,
-                m_Data.Slice(offset, colorAcc.count)
+                colorDestination
             );
             if (h.HasValue)
             {
@@ -81,6 +101,16 @@ namespace GLTFast
 
         public void Dispose()
         {
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            if (m_SafetyHandles != null)
+            {
+                foreach (var handle in m_SafetyHandles)
+                {
+                    AtomicSafetyHandle.Release(handle);
+                }
+                m_SafetyHandles = null;
+            }
+#endif
             if (m_Data.IsCreated)
             {
                 m_Data.Dispose();
@@ -92,7 +122,7 @@ namespace GLTFast
             GltfComponentType inputType,
             GltfAccessorAttributeType attributeType,
             int inputByteStride,
-            NativeSlice<float4> output
+            NativeArray<float4> output
             )
         {
             Profiler.BeginSample("PrepareColors32");
@@ -119,7 +149,7 @@ namespace GLTFast
                             {
                                 input = (byte*)input,
                                 inputByteStride = inputByteStride > 0 ? inputByteStride : 12,
-                                result = (float4*)output.GetUnsafePtr()
+                                result = output
                             };
                             jobHandle = job.Schedule(output.Length, GltfImport.DefaultBatchCount);
                         }
@@ -173,7 +203,7 @@ namespace GLTFast
                                 {
                                     input = (byte*)input,
                                     inputByteStride = inputByteStride,
-                                    result = (float4*)output.GetUnsafePtr()
+                                    result = output
                                 };
 #if UNITY_COLLECTIONS
                                 jobHandle = job.ScheduleBatch(output.Length,GltfImport.DefaultBatchCount);
@@ -189,7 +219,7 @@ namespace GLTFast
                             {
                                 input = (ushort*)input,
                                 inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
-                                result = (float4*)output.GetUnsafePtr()
+                                result = output
                             };
 #if UNITY_COLLECTIONS
                             jobHandle = job.ScheduleBatch(output.Length,GltfImport.DefaultBatchCount);

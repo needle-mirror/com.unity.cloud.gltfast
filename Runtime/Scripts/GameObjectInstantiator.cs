@@ -8,6 +8,7 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Profiling;
 #if UNITY_ANIMATION
+using UnityEngine.Playables;
 using Animation = UnityEngine.Animation;
 #endif
 using Camera = UnityEngine.Camera;
@@ -70,6 +71,8 @@ namespace GLTFast
         /// </summary>
         public GameObjectSceneInstance SceneInstance { get; protected set; }
 
+        internal ImportSettings ImportSettings { get; set; }
+
         // ReSharper restore MemberCanBePrivate.Global
 
         /// <summary>
@@ -121,7 +124,7 @@ namespace GLTFast
 
 #if UNITY_ANIMATION
         /// <inheritdoc />
-        public void AddAnimation(AnimationClip[] animationClips) {
+        public virtual void AddAnimation(AnimationClip[] animationClips) {
             if ((m_Settings.Mask & ComponentType.Animation) != 0 && animationClips != null) {
                 // we want to create an Animator for non-legacy clips, and an Animation component for legacy clips.
                 var isLegacyAnimation = animationClips.Length > 0 && animationClips[0].legacy;
@@ -177,6 +180,16 @@ namespace GLTFast
                 }
                 else {
                     SceneTransform.gameObject.AddComponent<Animator>();
+                    if (ImportSettings.AnimationMethod == AnimationMethod.Playables)
+                    {
+                        var animationPlayableComponent = SceneTransform.gameObject.AddComponent<AnimationPlayableComponent>();
+                        animationPlayableComponent.Init(animationClips, false);
+
+                        // this is always null for Editor imports
+                        // Playables currently not supported in Editor workflow
+                        if (animationPlayableComponent.Playable.HasValue)
+                            SceneInstance.Playable = animationPlayableComponent.Playable.Value;
+                    }
                 }
             }
         }

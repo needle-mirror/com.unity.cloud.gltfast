@@ -4,6 +4,9 @@
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
+#if UNITY_ANIMATION
+using UnityEngine.Playables;
+#endif
 
 namespace GLTFast
 {
@@ -149,10 +152,8 @@ namespace GLTFast
 #if UNITY_ANIMATION
             if (SceneInstance != null) {
                 if (playAutomatically) {
-                    var legacyAnimation = SceneInstance.LegacyAnimation;
-                    if (legacyAnimation != null) {
-                        SceneInstance.LegacyAnimation.Play();
-                    }
+                    SceneInstance.LegacyAnimation?.Play();
+                    SceneInstance.Playable?.GetGraph().Play();
                 }
             }
 #endif

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-using GLTFast.Jobs;
+using System;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -17,43 +17,92 @@ namespace GLTFast.Export
     {
 
         [BurstCompile]
-        public struct ConvertIndicesFlippedJob<T> : IJobParallelFor where T : struct
+        public struct ConvertIndicesFlippedJobUInt16 : IJobParallelFor
         {
-
             [ReadOnly]
-            public NativeArray<T> input;
+            public NativeArray<ushort> input;
 
             [WriteOnly]
             [NativeDisableParallelForRestriction]
-            public NativeArray<T> result;
+            public NativeArray<ushort> result;
+
+            public int indexStart;
+            public ushort baseVertexOffset;
 
             public void Execute(int i)
             {
-                result[i * 3 + 0] = input[i * 3 + 0];
-                result[i * 3 + 1] = input[i * 3 + 2];
-                result[i * 3 + 2] = input[i * 3 + 1];
+                result[i * 3 + 0] = (ushort)(input[i * 3 + 0] + baseVertexOffset);
+                result[i * 3 + 1] = (ushort)(input[i * 3 + 2] + baseVertexOffset);
+                result[i * 3 + 2] = (ushort)(input[i * 3 + 1] + baseVertexOffset);
+            }
+        }
+
+
+        [BurstCompile]
+        public struct ConvertIndicesFlippedJobUInt32 : IJobParallelFor
+        {
+            [ReadOnly]
+            public NativeArray<uint> input;
+
+            [WriteOnly]
+            [NativeDisableParallelForRestriction]
+            public NativeArray<uint> result;
+
+            public uint baseVertexOffset;
+
+            public void Execute(int index)
+            {
+                result[index * 3 + 0] = input[index * 3 + 0] + baseVertexOffset;
+                result[index * 3 + 1] = input[index * 3 + 2] + baseVertexOffset;
+                result[index * 3 + 2] = input[index * 3 + 1] + baseVertexOffset;
             }
         }
 
         [BurstCompile]
-        public struct ConvertIndicesQuadFlippedJob<T> : IJobParallelFor where T : struct
+        public struct ConvertIndicesQuadFlippedJobUInt16 : IJobParallelFor
         {
 
             [ReadOnly]
-            public NativeArray<T> input;
+            public NativeArray<ushort> input;
 
             [WriteOnly]
             [NativeDisableParallelForRestriction]
-            public NativeArray<T> result;
+            public NativeArray<ushort> result;
+
+            public ushort baseVertexOffset;
 
             public void Execute(int i)
             {
-                result[i * 6 + 0] = input[i * 4 + 0];
-                result[i * 6 + 1] = input[i * 4 + 2];
-                result[i * 6 + 2] = input[i * 4 + 1];
-                result[i * 6 + 3] = input[i * 4 + 2];
-                result[i * 6 + 4] = input[i * 4 + 0];
-                result[i * 6 + 5] = input[i * 4 + 3];
+                result[i * 6 + 0] = (ushort)(input[i * 4 + 0] + baseVertexOffset);
+                result[i * 6 + 1] = (ushort)(input[i * 4 + 2] + baseVertexOffset);
+                result[i * 6 + 2] = (ushort)(input[i * 4 + 1] + baseVertexOffset);
+                result[i * 6 + 3] = (ushort)(input[i * 4 + 2] + baseVertexOffset);
+                result[i * 6 + 4] = (ushort)(input[i * 4 + 0] + baseVertexOffset);
+                result[i * 6 + 5] = (ushort)(input[i * 4 + 3] + baseVertexOffset);
+            }
+        }
+
+        [BurstCompile]
+        public struct ConvertIndicesQuadFlippedJobUInt32 : IJobParallelFor
+        {
+
+            [ReadOnly]
+            public NativeArray<uint> input;
+
+            [WriteOnly]
+            [NativeDisableParallelForRestriction]
+            public NativeArray<uint> result;
+
+            public uint baseVertexOffset;
+
+            public void Execute(int index)
+            {
+                result[index * 6 + 0] = input[index * 4 + 0] + baseVertexOffset;
+                result[index * 6 + 1] = input[index * 4 + 2] + baseVertexOffset;
+                result[index * 6 + 2] = input[index * 4 + 1] + baseVertexOffset;
+                result[index * 6 + 3] = input[index * 4 + 2] + baseVertexOffset;
+                result[index * 6 + 4] = input[index * 4 + 0] + baseVertexOffset;
+                result[index * 6 + 5] = input[index * 4 + 3] + baseVertexOffset;
             }
         }
 

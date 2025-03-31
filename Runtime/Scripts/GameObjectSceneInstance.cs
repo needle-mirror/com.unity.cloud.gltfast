@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_ANIMATION
+using UnityEngine.Playables;
+#endif
 
 namespace GLTFast
 {
@@ -30,10 +33,17 @@ namespace GLTFast
 #if UNITY_ANIMATION
         /// <summary>
         /// <see cref="Animation" /> component. Is null if scene has no
-        /// animation clips.
+        /// legacy animation clips.
         /// Only available if the built-in Animation module is enabled.
         /// </summary>
         public Animation LegacyAnimation { get; private set; }
+
+        /// <summary>
+        /// <see cref="Playable" /> instance. Is null if scene has no
+        /// Playables animation clips.
+        /// Only available if the built-in Animation module is enabled.
+        /// </summary>
+        public Playable? Playable { get; internal set; }
 #endif
 
         List<Camera> m_Cameras;

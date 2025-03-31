@@ -21,6 +21,10 @@ namespace GLTFast
         /// <summary>
         /// <a href="https://docs.unity3d.com/Manual/AnimationOverview.html">Default Animation System (Mecanim)</a>
         /// </summary>
-        Mecanim
+        Mecanim,
+        /// <summary>
+        /// <a href="https://docs.unity3d.com/Manual/Playables.html">Playables Animation System</a>
+        /// </summary>
+        Playables
     }
 }
