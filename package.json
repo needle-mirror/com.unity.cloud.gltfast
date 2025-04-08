@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.12.0",
+  "version": "6.12.1",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2020.3",
@@ -27,15 +27,15 @@
   },
   "unityRelease": "48f1",
   "_upm": {
-    "changelog": "### Added\n- [Playables](https://docs.unity3d.com/Manual/Playables.html) option for runtime animation imports.\n- Support for accessors without a buffer view when importing animation clips.\n\n### Fixed\n- (Import)`InvalidOperationException` on multi-primitive meshes with vertex colors thrown by the native container safety system (fixes [#30](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/30)).\n- (Export) Sub-meshes that have a base vertex other than zero are exported with correct indices now.\n- Reliability issues related to lack of certain async calls in [GltfImport](xref:GLTFast.GltfImport*) and [GltfWriter](xref:GLTFast.GltfWriter*)."
+    "changelog": "### Fixed\n- Incorrect using for Assert from NUnit.Framework to UnityEngine.Assertions"
   },
   "upmCi": {
-    "footprint": "7505b69d32a7eca15b77c4e855da946572d504e0"
+    "footprint": "8809609843a55ae6ee4c5e05518c04a29697172b"
   },
   "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.12/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "5ce38f3e1859b50c51a5d317335ddd96f241d822"
+    "revision": "bc208493bd390e931ba151ce89ffd88a997371db"
   }
 }
