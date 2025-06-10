@@ -52,7 +52,7 @@ For example, if you don't need PNG/Jpeg support (because you use only KTX&trade;
 > [!CAUTION]
 > Don't apply this if your project or one of its packages (e.g. [Polyspatial 1.3]) has a dependency on [Collections] 1.4 or older. Unfortunately [Collections] version 1.5.0 introduced breaking changes that might lead to compiler errors otherwise.
 
-Projects running Editor versions 2020 or 2021 can increase the performance of certain low-level C# jobs by upgrading the [Collections] package to version 1.5.1 (or newer). *glTFast* then utilizes [IJobParallelForBatch] for increased loading speed.
+Projects running Editor version 2021 can increase the performance of certain low-level C# jobs by upgrading the [Collections] package to version 1.5.1 (or newer). *glTFast* then utilizes [IJobParallelForBatch] for increased loading speed.
 
 > [!NOTE]
 > Performance measurements showed that in Unity 2022 and later the Burst compiler has gotten so advanced that performance is excellent out-of-the-box and adjusting the [Collections] package versions makes little to no difference.

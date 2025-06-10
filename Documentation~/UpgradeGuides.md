@@ -20,7 +20,7 @@ You can do this by manually editing the URL in the [project manifest][ProjectMan
 
 ## Upgrade to 6.0
 
-Use Unity 2020.3.48f1 or newer only.
+Use Unity 2021.3.46f1 or newer only.
 
 *GltfAnimation* was renamed to [Animation](xref:GLTFast.Schema.Animation).
 

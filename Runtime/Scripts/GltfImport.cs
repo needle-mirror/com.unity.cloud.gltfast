@@ -2820,7 +2820,7 @@ namespace GLTFast
                                 meshResult,
                                 joints,
                                 rootJoint,
-                                Root.Meshes[node.mesh].weights,
+                                node.weights ?? Root.Meshes[node.mesh].weights,
                                 meshNumeration
                             );
                         }

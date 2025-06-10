@@ -65,11 +65,11 @@ namespace GLTFast.Schema
         /// </summary>
         public float[] translation;
 
-        // /// <summary>
-        // /// The weights of the instantiated Morph Target.
-        // /// Number of elements must match number of Morph Targets of used mesh.
-        // /// </summary>
-        // public double[] weights;
+        /// <summary>
+        /// The weights of the instantiated Morph Target.
+        /// Number of elements must match number of Morph Targets of used mesh.
+        /// </summary>
+        public float[] weights;
 
         /// <summary>
         /// The index of the skin (in <see cref="RootBase.Skins"/> referenced by this node.
@@ -122,6 +122,11 @@ namespace GLTFast.Schema
             if (matrix != null)
             {
                 writer.AddArrayProperty("matrix", matrix);
+            }
+
+            if (weights != null)
+            {
+                writer.AddArrayProperty("weights", weights);
             }
 
             if (skin >= 0)

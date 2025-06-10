@@ -1,9 +1,9 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.12.1",
+  "version": "6.13.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
-  "unity": "2020.3",
+  "unity": "2021.3",
   "keywords": [
     "mesh",
     "gltf",
@@ -25,17 +25,17 @@
   "relatedPackages": {
     "com.unity.cloud.gltfast.tests": "0.0.0"
   },
-  "unityRelease": "48f1",
+  "unityRelease": "46f1",
   "_upm": {
-    "changelog": "### Fixed\n- Incorrect using for Assert from NUnit.Framework to UnityEngine.Assertions"
+    "changelog": "### Added\n- (Documentation) Use case for custom [Playables](https://docs.unity3d.com/Manual/Playables.html) animation implementation.\n\n### Changed\n\n### Fixed\n- Use XYZ-style normals in shaders even if DXT5nm-style is enabled.\n- (Import) When a node has morph target weights, they are applied properly (instead of the primitive's weights; fixes [#531](https://github.com/atteneder/glTFast/issues/531)).\n- (Import) Specular-Glossiness materials with alpha mode `MASK` are not blended anymore in URP/HDRP (fixes [#757](https://github.com/atteneder/glTFast/issues/757)).\n\n### Removed\n\n### Deprecated\n\n### Security"
   },
   "upmCi": {
-    "footprint": "8809609843a55ae6ee4c5e05518c04a29697172b"
+    "footprint": "55108db64ce0c9e9ca2b75ac0eed30337514ea71"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.12/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "bc208493bd390e931ba151ce89ffd88a997371db"
+    "revision": "917ba391702bc21ff9c5a4ad28d280d25a85d463"
   }
 }

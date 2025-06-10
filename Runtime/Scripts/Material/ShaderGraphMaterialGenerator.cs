@@ -679,7 +679,7 @@ namespace GLTFast.Materials {
             var feature = SpecularShaderFeatures.Default;
             if (gltfMaterial.doubleSided) feature |= SpecularShaderFeatures.DoubleSided;
 
-            if (gltfMaterial.GetAlphaMode() != AlphaMode.Opaque) {
+            if (gltfMaterial.GetAlphaMode() == AlphaMode.Blend) {
                 feature |= SpecularShaderFeatures.AlphaBlend;
             }
             return feature;
