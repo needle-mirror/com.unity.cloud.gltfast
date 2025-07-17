@@ -354,7 +354,10 @@ namespace GLTFast.Materials
 #endif
                     // Correct transmission is not supported in Built-In renderer
                     // This is an approximation for some corner cases
-                    if (transmission.transmissionFactor > 0f && transmission.transmissionTexture.index < 0)
+                    if (transmission.transmissionFactor > 0f
+                        && (transmission.transmissionTexture == null
+                           || transmission.transmissionTexture.index < 0)
+                        )
                     {
                         var premultiply = TransmissionWorkaroundShaderMode(transmission, ref baseColorLinear);
                         shaderMode = premultiply ? StandardShaderMode.Transparent : StandardShaderMode.Fade;

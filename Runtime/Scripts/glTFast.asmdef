@@ -10,8 +10,7 @@
         "Ktx",
         "Unity.Meshopt.Decompress",
         "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.RenderPipelines.HighDefinition.Runtime",
-        "glTFast.Animation"
+        "Unity.RenderPipelines.HighDefinition.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -83,7 +82,7 @@
         },
         {
             "name": "com.unity.collections",
-            "expression": "1.5.0",
+            "expression": "1.4.0",
             "define": "UNITY_COLLECTIONS"
         },
         {

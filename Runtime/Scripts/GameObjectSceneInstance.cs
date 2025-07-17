@@ -33,16 +33,18 @@ namespace GLTFast
 #if UNITY_ANIMATION
         /// <summary>
         /// <see cref="Animation" /> component. Is null if scene has no
-        /// legacy animation clips.
+        /// animation clips.
         /// Only available if the built-in Animation module is enabled.
         /// </summary>
         public Animation LegacyAnimation { get; private set; }
 
         /// <summary>
-        /// <see cref="Playable" /> instance. Is null if scene has no
-        /// Playables animation clips.
-        /// Only available if the built-in Animation module is enabled.
+        /// <a href="https://docs.unity3d.com/Manual/Playables.html">Playables</a> support has been removed since
+        /// it was not usable in builds. Use LegacyAnimation instead.
+        /// See: <a href="https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/UseCaseCustomPlayablesAnimation.html">UseCaseCustomPlayablesAnimation</a>
         /// </summary>
+        [Obsolete("Playables support has been removed since it was not usable in builds. Use LegacyAnimation instead. " +
+            "See: <a href=\"https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/UseCaseCustomPlayablesAnimation.html\">UseCaseCustomPlayablesAnimation</a>")]
         public Playable? Playable { get; internal set; }
 #endif
 

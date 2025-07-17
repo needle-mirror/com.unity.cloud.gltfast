@@ -8,7 +8,6 @@ using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Profiling;
 #if UNITY_ANIMATION
-using UnityEngine.Playables;
 using Animation = UnityEngine.Animation;
 #endif
 using Camera = UnityEngine.Camera;
@@ -70,8 +69,6 @@ namespace GLTFast
         /// Contains information about the latest instance of a glTF scene
         /// </summary>
         public GameObjectSceneInstance SceneInstance { get; protected set; }
-
-        internal ImportSettings ImportSettings { get; set; }
 
         // ReSharper restore MemberCanBePrivate.Global
 
@@ -180,16 +177,6 @@ namespace GLTFast
                 }
                 else {
                     SceneTransform.gameObject.AddComponent<Animator>();
-                    if (ImportSettings.AnimationMethod == AnimationMethod.Playables)
-                    {
-                        var animationPlayableComponent = SceneTransform.gameObject.AddComponent<AnimationPlayableComponent>();
-                        animationPlayableComponent.Init(animationClips, false);
-
-                        // this is always null for Editor imports
-                        // Playables currently not supported in Editor workflow
-                        if (animationPlayableComponent.Playable.HasValue)
-                            SceneInstance.Playable = animationPlayableComponent.Playable.Value;
-                    }
                 }
             }
         }

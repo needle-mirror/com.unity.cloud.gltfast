@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using GLTFast.Logging;
+
 #if NEWTONSOFT_JSON
 namespace GLTFast.Documentation.Examples
 {
@@ -21,7 +23,7 @@ namespace GLTFast.Documentation.Examples
             try
             {
                 ImportAddonRegistry.RegisterImportAddon(new MyAddon());
-                var gltfImport = new GltfImport();
+                var gltfImport = new GltfImport(logger:new ConsoleLogger());
                 await gltfImport.Load(Uri);
                 await gltfImport.InstantiateMainSceneAsync(transform);
             }

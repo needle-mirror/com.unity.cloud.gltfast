@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2024 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
+using GLTFast.Logging;
+
 #if NEWTONSOFT_JSON
 namespace GLTFast.Documentation.Examples
 {
@@ -21,7 +23,8 @@ namespace GLTFast.Documentation.Examples
         {
             try
             {
-                var gltfImport = new GltfImport();
+                var logger = new ConsoleLogger();
+                var gltfImport = new GltfImport(logger:logger);
                 await gltfImport.Load(Uri);
 
                 for (var i = 0; i < quantity; i++)
@@ -33,7 +36,7 @@ namespace GLTFast.Documentation.Examples
                             localPosition = new Vector3(0, 0, i * .13f)
                         }
                     };
-                    var instantiator = new GameObjectInstantiator(gltfImport, go.transform);
+                    var instantiator = new GameObjectInstantiator(gltfImport, go.transform, logger:logger);
                     await gltfImport.InstantiateMainSceneAsync(instantiator);
                     var scene = instantiator.SceneInstance;
                     var materialsVariantsControl = scene.MaterialsVariantsControl;

@@ -23,8 +23,12 @@ namespace GLTFast
         /// </summary>
         Mecanim,
         /// <summary>
-        /// <a href="https://docs.unity3d.com/Manual/Playables.html">Playables Animation System</a>
+        /// <a href="https://docs.unity3d.com/Manual/Playables.html">Playables</a> support has been removed since
+        /// it was not usable in builds. Use LegacyAnimation instead.
+        /// See: <a href="https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/UseCaseCustomPlayablesAnimation.html">UseCaseCustomPlayablesAnimation</a>
         /// </summary>
+        [Obsolete("Playables support has been removed since it was not usable in builds. Use LegacyAnimation instead. " +
+            "See: <a href=\"https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/UseCaseCustomPlayablesAnimation.html\">UseCaseCustomPlayablesAnimation</a>")]
         Playables
     }
 }

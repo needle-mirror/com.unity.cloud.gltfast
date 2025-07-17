@@ -11,7 +11,6 @@
 * [Project Setup](ProjectSetup.md)
 * Use Cases
   * [Use glTFast Add-on API to import custom data](UseCaseCustomExtras.md)
-  * [Use Playables API for custom animation behaviour](UseCaseCustomPlayablesAnimation.md)
 * [Development](development.md)
   * [Sources](sources.md)
   * [Test Project](test-project-setup.md)

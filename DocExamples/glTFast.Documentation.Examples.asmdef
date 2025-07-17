@@ -19,11 +19,6 @@
             "name": "com.unity.nuget.newtonsoft-json",
             "expression": "3",
             "define": "NEWTONSOFT_JSON"
-        },
-        {
-            "name": "com.unity.modules.animation",
-            "expression": "1.0.0",
-            "define": "UNITY_ANIMATION"
         }
     ],
     "noEngineReferences": false

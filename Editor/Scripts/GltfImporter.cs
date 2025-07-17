@@ -121,14 +121,6 @@ namespace GLTFast.Editor
                 m_ImportedNames = new HashSet<string>();
                 m_ImportedObjects = new HashSet<Object>();
 
-                if (importSettings.AnimationMethod == AnimationMethod.Playables)
-                {
-                    // Playables graph is unsupported at Editor time, overriding to Mecanim setting instead
-                    importSettings.AnimationMethod = AnimationMethod.Mecanim;
-                    Debug.LogWarning($"{nameof(AnimationMethod)} setting \"{nameof(AnimationMethod.Playables)}\" is not " +
-                        $"available for Editor (design-time) imports. Falling back to {nameof(AnimationMethod.Mecanim)}.", this);
-                }
-
                 if (instantiationSettings.SceneObjectCreation == SceneObjectCreation.Never)
                 {
 

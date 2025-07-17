@@ -4,9 +4,6 @@
 using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
-#if UNITY_ANIMATION
-using UnityEngine.Playables;
-#endif
 
 namespace GLTFast
 {
@@ -150,12 +147,8 @@ namespace GLTFast
         {
             SceneInstance = (instantiator as GameObjectInstantiator)?.SceneInstance;
 #if UNITY_ANIMATION
-            if (SceneInstance != null) {
-                if (playAutomatically) {
-                    SceneInstance.LegacyAnimation?.Play();
-                    SceneInstance.Playable?.GetGraph().Play();
-                }
-            }
+            if (playAutomatically)
+                SceneInstance?.LegacyAnimation?.Play();
 #endif
             base.PostInstantiation(instantiator, success);
         }
