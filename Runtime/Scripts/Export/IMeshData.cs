@@ -29,7 +29,7 @@ namespace GLTFast.Export
 #endif
     }
 
-    interface IMeshData<TIndex> : IMeshData where TIndex : struct
+    interface IMeshData<TIndex> : IMeshData where TIndex : unmanaged
     {
 #if ASYNC_MESH_DATA
         Task<NativeArray<TIndex>> GetIndexData();

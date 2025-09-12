@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-#if DRACO_UNITY
+#if DRACO_IS_RECENT
 
 using System;
 using System.Collections.Generic;
@@ -140,7 +140,7 @@ namespace GLTFast {
             {
                 var dracoExt = primitive.Extensions.KHR_draco_mesh_compression;
                 var buffer = buffers.GetBufferView(dracoExt.bufferView, out _);
-                mesh = await StartDecode(buffer, dracoExt.attributes);
+                mesh = await StartDecode(buffer.AsNativeArrayReadOnly(), dracoExt.attributes);
             }
 
             if (mesh is null) {
@@ -184,7 +184,7 @@ namespace GLTFast {
             return mesh;
         }
 
-        async Task<Mesh> StartDecode(NativeSlice<byte> data, Attributes dracoAttributes)
+        async Task<Mesh> StartDecode(NativeArray<byte>.ReadOnly data, Attributes dracoAttributes)
         {
             var flags = DecodeSettings.ConvertSpace;
             if (m_NeedsTangents)
@@ -238,4 +238,4 @@ namespace GLTFast {
         }
     }
 }
-#endif // DRACO_UNITY
+#endif // DRACO_IS_RECENT

@@ -114,7 +114,7 @@ namespace GLTFast.Schema
         /// </summary>
         internal abstract void UnsetExtensions();
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
         public bool IsDracoCompressed => Extensions!=null && Extensions.KHR_draco_mesh_compression != null;
 #endif
 
@@ -350,7 +350,7 @@ namespace GLTFast.Schema
     [Serializable]
     public class MeshPrimitiveExtensions
     {
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
         // ReSharper disable once InconsistentNaming
         public MeshPrimitiveDracoExtension KHR_draco_mesh_compression;
 #endif
@@ -362,7 +362,7 @@ namespace GLTFast.Schema
         internal void GltfSerialize(JsonWriter writer)
         {
             writer.AddObject();
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
             if (KHR_draco_mesh_compression != null) {
                 writer.AddProperty("KHR_draco_mesh_compression");
                 KHR_draco_mesh_compression.GltfSerialize(writer);
@@ -377,7 +377,7 @@ namespace GLTFast.Schema
         }
     }
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
     [Serializable]
     public class MeshPrimitiveDracoExtension {
         public int bufferView;

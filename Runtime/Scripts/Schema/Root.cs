@@ -511,7 +511,7 @@ namespace GLTFast.Schema
 #endif // GLTFAST_SAFE
                 }
             }
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
             if(!check && Meshes!=null) {
                 foreach (var mesh in Meshes) {
                     if (mesh.Primitives != null) {
@@ -600,7 +600,7 @@ namespace GLTFast.Schema
                         var primitive = mesh.Primitives[j];
                         if (primitive.Extensions == null) continue;
                         var fake = fakeRoot.meshes[i].primitives[j];
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
                         if (fake.extensions.KHR_draco_mesh_compression == null) {
                             primitive.Extensions.KHR_draco_mesh_compression = null;
                         }

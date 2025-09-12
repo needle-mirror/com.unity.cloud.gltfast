@@ -46,7 +46,7 @@
         {
             "name": "com.unity.cloud.draco",
             "expression": "5.0.0-pre.1",
-            "define": "DRACO_UNITY"
+            "define": "DRACO_IS_INSTALLED"
         },
         {
             "name": "com.unity.shadergraph",

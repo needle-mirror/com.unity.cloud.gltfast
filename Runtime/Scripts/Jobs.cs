@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Runtime.CompilerServices;
 using System;
 using AOT;
 using GLTFast.Vertex;
@@ -418,12 +417,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt8ToInt32Job : IJobParallelFor
+    struct ConvertIndicesUInt8ToInt32Job : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public NativeArray<byte>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int> result;
@@ -435,52 +432,40 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt8ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt8ToInt32FlippedJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public NativeArray<byte3>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int3> result;
 
         public void Execute(int index)
         {
-            result[index] = new int3(
-                input[index * 3],
-                input[index * 3 + 2],
-                input[index * 3 + 1]
-                );
+            result[index] = input[index].GltfToUnityTriangleIndies();
         }
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt16ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt16ToInt32FlippedJob : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public ushort* input;
+        public NativeArray<ushort3>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int3> result;
 
         public void Execute(int index)
         {
-            result[index] = new int3(
-                input[index * 3],
-                input[index * 3 + 2],
-                input[index * 3 + 1]
-            );
+            result[index] = input[index].GltfToUnityTriangleIndies();
         }
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt16ToInt32Job : IJobParallelFor
+    struct ConvertIndicesUInt16ToInt32Job : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public ushort* input;
+        public NativeArray<ushort>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int> result;
@@ -492,11 +477,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt32ToInt32Job : IJobParallelFor
+    struct ConvertIndicesUInt32ToInt32Job : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public uint* input;
+        public NativeArray<uint>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int> result;
@@ -508,22 +492,18 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertIndicesUInt32ToInt32FlippedJob : IJobParallelFor
+    struct ConvertIndicesUInt32ToInt32FlippedJob : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public uint* input;
+        public NativeArray<uint3>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<int3> result;
 
         public void Execute(int index)
         {
-            result[index] = new int3(
-                (int)input[index * 3],
-                (int)input[index * 3 + 2],
-                (int)input[index * 3 + 1]
-            );
+            var idx = input[index];
+            result[index] = new int3((int)idx.x, (int)idx.z, (int)idx.y);
         }
     }
 
@@ -555,7 +535,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var off = input + (startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float2(off[0], 1 - off[1]);
                 resultV = (float2*)((byte*)resultV + outputByteStride);
@@ -632,7 +612,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var uv = (ushort*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float2(uv[0], 1 - uv[1]);
                 resultV = (float2*)((byte*)resultV + outputByteStride);
@@ -709,7 +689,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var uv = (short*)((byte*)input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float2(uv[0], 1 - uv[1]);
                 resultV = (float2*)((byte*)resultV + outputByteStride);
@@ -755,7 +735,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var uv = (short*)((byte*)input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = new float2(uv[0], uv[1]) / short.MaxValue;
                 var tmp2 = max(tmp, -1f);
@@ -809,7 +789,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var off = input + startIndex * inputByteStride;
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float2(off[0], 1 - off[1]);
                 resultV = (float2*)((byte*)resultV + outputByteStride);
@@ -855,7 +835,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var off = input + startIndex * inputByteStride;
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = new float2(off[0], off[1]) / 127f;
                 var tmp2 = max(tmp, -1f);
@@ -972,9 +952,9 @@ namespace GLTFast.Jobs
         {
             var src = (ushort*)((byte*)input + startIndex * inputByteStride);
             var endIndex = startIndex + count;
-            for (var x = startIndex; x < endIndex; x++)
+            for (var index = startIndex; index < endIndex; index++)
             {
-                result[x] = new float4(
+                result[index] = new float4(
                     src[0] / (float)ushort.MaxValue,
                     src[1] / (float)ushort.MaxValue,
                     src[2] / (float)ushort.MaxValue,
@@ -1021,9 +1001,9 @@ namespace GLTFast.Jobs
         {
             var src = (float4*)(input + startIndex * inputByteStride);
             var endIndex = startIndex + count;
-            for (var x = startIndex; x < endIndex; x++)
+            for (var index = startIndex; index < endIndex; index++)
             {
-                result[x] = *src;
+                result[index] = *src;
                 src = (float4*)((byte*)src + inputByteStride);
             }
         }
@@ -1087,15 +1067,13 @@ namespace GLTFast.Jobs
     /// General purpose vector 3 (position or normal) conversion
     /// </summary>
     [BurstCompile]
-    unsafe struct ConvertVector3FloatToFloatJob : IJobParallelFor
+    struct ConvertVector3FloatToFloatJob : IJobParallelFor
     {
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float3* input;
+        public ReadOnlyNativeStridedArray<float3> input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float3* result;
+        [WriteOnly]
+        public NativeArray<float3> result;
 
         public void Execute(int index)
         {
@@ -1106,16 +1084,13 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertRotationsFloatToFloatJob : IJobParallelFor
+    struct ConvertRotationsFloatToFloatJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float4* input;
+        public NativeArray<float4>.ReadOnly input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float4* result;
+        [WriteOnly]
+        public NativeArray<quaternion> result;
 
         public void Execute(int index)
         {
@@ -1127,23 +1102,17 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertRotationsInt16ToFloatJob : IJobParallelFor
+    struct ConvertRotationsInt16ToFloatJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public short* input;
+        public NativeArray<short4>.ReadOnly input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float* result;
+        [WriteOnly]
+        public NativeArray<quaternion> result;
 
         public void Execute(int index)
         {
-            result[index * 4] = Mathf.Max(input[index * 4] / (float)short.MaxValue, -1f);
-            result[index * 4 + 1] = -Mathf.Max(input[index * 4 + 1] / (float)short.MaxValue, -1f);
-            result[index * 4 + 2] = -Mathf.Max(input[index * 4 + 2] / (float)short.MaxValue, -1f);
-            result[index * 4 + 3] = Mathf.Max(input[index * 4 + 3] / (float)short.MaxValue, -1f);
+            result[index] = input[index].GltfToUnityRotation();
         }
     }
 
@@ -1152,23 +1121,17 @@ namespace GLTFast.Jobs
     /// Quaternions in Unity space (floats).
     /// </summary>
     [BurstCompile]
-    unsafe struct ConvertRotationsInt8ToFloatJob : IJobParallelFor
+    struct ConvertRotationsInt8ToFloatJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public sbyte* input;
+        public NativeArray<sbyte4>.ReadOnly input;
 
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float* result;
+        [WriteOnly]
+        public NativeArray<quaternion> result;
 
         public void Execute(int index)
         {
-            result[index * 4] = Mathf.Max(input[index * 4] / 127f, -1f);
-            result[index * 4 + 1] = -Mathf.Max(input[index * 4 + 1] / 127f, -1f);
-            result[index * 4 + 2] = -Mathf.Max(input[index * 4 + 2] / 127f, -1f);
-            result[index * 4 + 3] = Mathf.Max(input[index * 4 + 3] / 127f, -1f);
+            result[index] = input[index].GltfToUnityRotation();
         }
     }
 
@@ -1201,7 +1164,7 @@ namespace GLTFast.Jobs
             var resultV = (float2*)((byte*)result + startIndex * outputByteStride);
             var off = (float2*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = *off;
                 tmp.y = 1 - tmp.y;
@@ -1234,13 +1197,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<float3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1253,24 +1211,22 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (float3*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            var end = startIndex + count;
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = *off;
+                var tmp = input[index];
                 tmp.x *= -1;
                 *resultV = tmp;
 
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (float3*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (float3*)(input + index * inputByteStride);
-            var tmp = *off;
+            var tmp = input[index];
             tmp.x *= -1;
             *resultV = tmp;
         }
@@ -1343,7 +1299,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = (float4*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = *off;
                 tmp.z *= -1;
@@ -1394,7 +1350,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = (float4*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = *off;
                 resultV = (float4*)((byte*)resultV + outputByteStride);
@@ -1440,7 +1396,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = input + startIndex * inputByteStride;
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float4(
                     off[0] / 255f,
@@ -1496,7 +1452,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = (ushort*)(input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 *resultV = new float4(
                     off[0] / (float)ushort.MaxValue,
@@ -1552,7 +1508,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = (short*)((byte*)input + startIndex * inputByteStride);
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = new float4(off[0], off[1], off[2], off[3]) / short.MaxValue;
                 var tmp2 = max(tmp, -1f);
@@ -1605,7 +1561,7 @@ namespace GLTFast.Jobs
             var resultV = (float4*)((byte*)result + startIndex * outputByteStride);
             var off = input + startIndex * inputByteStride;
 
-            for (var x = 0; x < count; x++)
+            for (var index = 0; index < count; index++)
             {
                 var tmp = new float4(off[0], off[1], off[2], off[3]) / 127f;
                 var tmp2 = max(tmp, -1f);
@@ -1637,13 +1593,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<ushort3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1656,21 +1607,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (ushort*)(input + startIndex * inputByteStride);
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                *resultV = new float3(-(float)off[0], off[1], off[2]);
+                *resultV = input[index].GltfToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (ushort*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (ushort*)(input + (inputByteStride * index));
-            *resultV = new float3(-(float)off[0], off[1], off[2]);
+            *resultV = input[index].GltfToUnityFloat3();
         }
 #endif
     }
@@ -1684,11 +1633,7 @@ namespace GLTFast.Jobs
 #endif
     {
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<ushort3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1701,30 +1646,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (ushort*)(input + startIndex * inputByteStride);
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = new float3(
-                    -(off[0] / (float)ushort.MaxValue),
-                    off[1] / (float)ushort.MaxValue,
-                    off[2] / (float)ushort.MaxValue
-                );
-                *resultV = tmp;
+                *resultV = input[index].GltfToUnityNormalizedFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (ushort*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (ushort*)(input + (inputByteStride * index));
-            *resultV = new float3(
-                -(off[0] / (float)ushort.MaxValue),
-                off[1] / (float)ushort.MaxValue,
-                off[2] / (float)ushort.MaxValue
-            );
+            *resultV = input[index].GltfToUnityNormalizedFloat3();
         }
 #endif
     }
@@ -1737,14 +1671,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<short3> input;
 
         [ReadOnly]
         [NativeDisableUnsafePtrRestriction]
@@ -1757,21 +1685,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (short*)(input + startIndex * inputByteStride);
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                *resultV = new float3(-off[0], off[1], off[2]);
+                *resultV = input[index].GltfToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (short*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (short*)(input + (index * inputByteStride));
-            *resultV = new float3(-(float)off[0], off[1], off[2]);
+            *resultV = input[index].GltfToUnityFloat3();
         }
 #endif
     }
@@ -1790,11 +1716,7 @@ namespace GLTFast.Jobs
     {
 
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<short3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1807,29 +1729,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (short*)(input + startIndex * inputByteStride);
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = new float3(off[0], off[1], off[2]) / short.MaxValue;
-                var tmp2 = max(tmp, -1f);
-                tmp2.x *= -1;
-                *resultV = tmp2;
-
+                *resultV = input[index].GltfToUnityNormalizedFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (short*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (short*)(input + (index * inputByteStride));
-
-            var tmp = new float3(off[0], off[1], off[2]) / short.MaxValue;
-            var tmp2 = max(tmp, -1f);
-            tmp2.x *= -1;
-            *resultV = tmp2;
+            *resultV = input[index].GltfToUnityNormalizedFloat3();
         }
 #endif
     }
@@ -1848,11 +1760,7 @@ namespace GLTFast.Jobs
     {
 
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<short3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1865,29 +1773,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = (short*)(input + startIndex * inputByteStride);
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = new float3(off[0], off[1], off[2]) / short.MaxValue;
-                var tmp2 = max(tmp, -1f);
-                tmp2.x *= -1;
-                *resultV = normalize(tmp2);
-
+                *resultV = input[index].GltfNormalToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off = (short*)((byte*)off + inputByteStride);
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = (short*)(input + (index * inputByteStride));
-
-            var tmp = new float3(off[0], off[1], off[2]) / short.MaxValue;
-            var tmp2 = max(tmp, -1f);
-            tmp2.x *= -1;
-            *resultV = normalize(tmp2);
+            *resultV = input[index].GltfNormalToUnityFloat3();
         }
 #endif
     }
@@ -1900,13 +1798,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public sbyte* input;
+        public ReadOnlyNativeStridedArray<sbyte3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1919,21 +1812,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = input + startIndex * inputByteStride;
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                *resultV = new float3(-off[0], off[1], off[2]);
+                *resultV = input[index].GltfToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off += inputByteStride;
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = input + (inputByteStride * index);
-            *resultV = new float3(-(float)off[0], off[1], off[2]);
+            *resultV = input[index].GltfToUnityFloat3();
         }
 #endif
     }
@@ -1950,13 +1841,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public sbyte* input;
+        public ReadOnlyNativeStridedArray<sbyte3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -1969,29 +1855,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = input + startIndex * inputByteStride;
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = new float3(off[0], off[1], off[2]) / 127f;
-                var tmp2 = max(tmp, -1);
-                tmp2.x *= -1;
-                *resultV = tmp2;
-
+                *resultV = input[index].GltfToUnityNormalizedFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off += inputByteStride;
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = input + (inputByteStride * index);
-
-            var tmp = new float3(off[0], off[1], off[2]) / 127f;
-            var tmp2 = max(tmp, -1);
-            tmp2.x *= -1;
-            *resultV = tmp2;
+            *resultV = input[index].GltfToUnityNormalizedFloat3();
         }
 #endif
     }
@@ -2008,13 +1884,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public sbyte* input;
+        public ReadOnlyNativeStridedArray<sbyte3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -2027,29 +1898,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = input + startIndex * inputByteStride;
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                var tmp = new float3(off[0], off[1], off[2]) / 127f;
-                var tmp2 = max(tmp, -1);
-                tmp2.x *= -1;
-                *resultV = normalize(tmp2);
-
+                *resultV = input[index].GltfNormalToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off += inputByteStride;
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = input + (inputByteStride * index);
-
-            var tmp = new float3(off[0], off[1], off[2]) / 127f;
-            var tmp2 = max(tmp, -1);
-            tmp2.x *= -1;
-            *resultV = normalize(tmp2);
+            *resultV = input[index].GltfNormalToUnityFloat3();
         }
 #endif
     }
@@ -2062,13 +1923,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<byte3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -2081,21 +1937,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = input + startIndex * inputByteStride;
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                *resultV = new float3(-(float)off[0], off[1], off[2]);
+                *resultV = input[index].GltfToUnityFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off += inputByteStride;
             }
         }
 #else
         public void Execute(int index)
         {
-            var off = input + (index * inputByteStride);
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            *resultV = new float3(-(float)off[0], off[1], off[2]);
+            *resultV = input[index].GltfToUnityFloat3();
         }
 #endif
     }
@@ -2108,13 +1962,8 @@ namespace GLTFast.Jobs
         IJobParallelFor
 #endif
     {
-
         [ReadOnly]
-        public int inputByteStride;
-
-        [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public ReadOnlyNativeStridedArray<byte3> input;
 
         [ReadOnly]
         public int outputByteStride;
@@ -2127,29 +1976,19 @@ namespace GLTFast.Jobs
         public void Execute(int startIndex, int count)
         {
             var resultV = (float3*)((byte*)result + startIndex * outputByteStride);
-            var off = input + startIndex * inputByteStride;
+            var end = startIndex + count;
 
-            for (var x = 0; x < count; x++)
+            for (var index = startIndex; index < end; index++)
             {
-                *resultV = new float3(
-                    -(off[0] / 255f),
-                    off[1] / 255f,
-                    off[2] / 255f
-                );
+                *resultV = input[index].GltfToUnityNormalizedFloat3();
                 resultV = (float3*)((byte*)resultV + outputByteStride);
-                off += inputByteStride;
             }
         }
 #else
         public void Execute(int index)
         {
             var resultV = (float3*)(((byte*)result) + (index * outputByteStride));
-            var off = input + (index * inputByteStride);
-            *resultV = new float3(
-                -(off[0] / 255f),
-                off[1] / 255f,
-                off[2] / 255f
-            );
+            *resultV = input[index].GltfToUnityNormalizedFloat3();
         }
 #endif
     }
@@ -2314,45 +2153,32 @@ namespace GLTFast.Jobs
 #endif
 
     [BurstCompile]
-    unsafe struct ConvertMatricesJob : IJobParallelFor
+    struct ConvertMatricesJob : IJobParallelFor
     {
 
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float4x4* input;
+        public NativeArray<float4x4>.ReadOnly input;
 
         [WriteOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public float4x4* result;
+        public NativeArray<float4x4> result;
 
         public void Execute(int index)
         {
-            var tmp = input[index].c0;
-            tmp.y *= -1;
-            tmp.z *= -1;
-            result[index].c0 = tmp;
-
-            tmp = input[index].c1;
-            tmp.x *= -1;
-            result[index].c1 = tmp;
-
-            tmp = input[index].c2;
-            tmp.x *= -1;
-            result[index].c2 = tmp;
-
-            tmp = input[index].c3;
-            tmp.x *= -1;
-            result[index].c3 = tmp;
+            var tmp = input[index];
+            result[index] = new float4x4(
+                tmp.c0.x, -tmp.c1.x, -tmp.c2.x, -tmp.c3.x,
+                -tmp.c0.y, tmp.c1.y, tmp.c2.y, tmp.c3.y,
+                -tmp.c0.z, tmp.c1.z, tmp.c2.z, tmp.c3.z,
+                tmp.c0.w, tmp.c1.w, tmp.c2.w, tmp.c3.w
+                );
         }
     }
 
     [BurstCompile]
-    unsafe struct ConvertScalarInt8ToFloatNormalizedJob : IJobParallelFor
+    struct ConvertScalarInt8ToFloatNormalizedJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public sbyte* input;
+        public NativeArray<sbyte>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<float> result;
@@ -2364,12 +2190,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertScalarUInt8ToFloatNormalizedJob : IJobParallelFor
+    struct ConvertScalarUInt8ToFloatNormalizedJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public byte* input;
+        public NativeArray<byte>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<float> result;
@@ -2381,12 +2205,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertScalarInt16ToFloatNormalizedJob : IJobParallelFor
+    struct ConvertScalarInt16ToFloatNormalizedJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public short* input;
+        public NativeArray<short>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<float> result;
@@ -2398,12 +2220,10 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    unsafe struct ConvertScalarUInt16ToFloatNormalizedJob : IJobParallelFor
+    struct ConvertScalarUInt16ToFloatNormalizedJob : IJobParallelFor
     {
-
         [ReadOnly]
-        [NativeDisableUnsafePtrRestriction]
-        public ushort* input;
+        public NativeArray<ushort>.ReadOnly input;
 
         [WriteOnly]
         public NativeArray<float> result;

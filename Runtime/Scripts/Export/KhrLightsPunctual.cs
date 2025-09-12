@@ -49,8 +49,22 @@ namespace GLTFast.Export
                     light.spot = new SpotLight
                     {
                         outerConeAngle = uLight.spotAngle * Mathf.Deg2Rad * .5f,
-                        innerConeAngle = uLight.innerSpotAngle * Mathf.Deg2Rad * .5f
                     };
+
+#if USING_HDRP && !UNITY_6000_3_OR_NEWER
+                    if (renderPipeline == RenderPipeline.HighDefinition)
+                    {
+                        // Up until Unity 6.2/HDRP 17.2 lightHd.innerSpotPercent was used
+                        // instead of uLight.innerSpotAngle.
+                        light.spot.innerConeAngle = lightHd != null
+                            ? uLight.spotAngle * Mathf.Deg2Rad * .5f * lightHd.innerSpotPercent01
+                            : 0;
+                    }
+                    else
+#endif
+                    {
+                        light.spot.innerConeAngle = uLight.innerSpotAngle * Mathf.Deg2Rad * .5f;
+                    }
                     break;
                 case LightType.Directional:
                     light.SetLightType(LightPunctual.Type.Directional);

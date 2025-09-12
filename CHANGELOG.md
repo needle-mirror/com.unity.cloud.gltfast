@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.14.0] - 2025-09-12
+
+### Added
+- Graphics Tests.
+- [EditorConfig](https://editorconfig.org/) for keeping a consistent code-style.
+- [IBufferView.ByteStride](xref:GLTFast.Schema.IBufferView.ByteStride).
+
+### Changed
+- (CI) Consolidated multiple redundant packaging and vetting/API validation jobs.
+- Changed internal buffer representation to custom native collection `ReadOnlyBuffer<byte>` (instead of [NativeArray&lt;byte&gt;.ReadOnly](xref:Unity.Collections.NativeArray`1.ReadOnly)) This enables sub-array slicing, has in-Editor safety checks and prepares for decommissioning misuse of NativeSlice.
+- Bumped Burst dependency version to 1.8.24, which is the recommended version in 2021 xLTS.
+- [KTX for Unity] minimum required version was raised to 3.5.0.
+- [Draco for Unity] minimum required version was raised to 5.2.0.
+
+### Fixed
+- (Export) Spotlight's inner cone angle is exported correctly on HDRP now.
+- (Test) Disabled URP compatibility mode in URP presets as it's obsolete and unsupported from Unity 6.3 onward.
+- (Import) Spotlight's inner cone angle is imported correctly on HDRP now.
+
+### Removed
+- (CI) SonarQube scan job.
+
+### Deprecated
+- [GLTFast.ManagedNativeArray](xref:GLTFast.ManagedNativeArray`2). It will be removed from public API in a future release. For internal development it's been replaced by `ReadOnlyBufferManagedArray<T>`.
+- [GLTFast.Export.ManagedNativeArray](xref:GLTFast.Export.ManagedNativeArray`2). It will get sealed or removed from public API in a future release.
+- [IGltfReadable.GetAccessorData](xref:GLTFast.IGltfReadable.GetAccessorData(System.Int32)). Along with [IGltfReadable.GetAccessor](xref:GLTFast.IGltfReadable.GetAccessor(System.Int32)) it is going to be removed and replaced with an improved way to access accessors' data in a future release.
+
+### Security
+
 ## [6.13.1] - 2025-07-17
 
 ### Added
@@ -290,7 +319,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On Apple visionOS, textures are always created readable, so that [PolySpatial visionOS][PolySpatialVisionOS] is able to convert them.
 - Draco compressed tangents import tangents correctly now.
 - Removed invalid attempt to calculate normals or tangents on point or line meshes.
-- Consistent log message when a glTF extension cannot be supported due to a missing Unity package depenency (e.g. [KTX for Unity][KtxForUnity]).
+- Consistent log message when a glTF extension cannot be supported due to a missing Unity package depenency (e.g. [KTX for Unity]).
   - All missing extensions are logged (not just the first one).
   - There's now a single message per missing package.
   - Depending on whether that extension is required the message's type is warning or error.
@@ -332,7 +361,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated soft-dependency packages are detected and a warning with upgrade instructions is shown in the console.
 
 ### Changed
-- Support for Draco 3D Data Compression is now provided by [*Draco for Unity* (com.unity.cloud.draco)][DracoForUnity], which is a fork of and replaces [*DracoUnity* (com.atteneder.draco)][DracoUnity].
+- Support for Draco 3D Data Compression is now provided by [*Draco for Unity* (com.unity.cloud.draco)][Draco For Unity], which is a fork of and replaces [*DracoUnity* (com.atteneder.draco)][DracoUnity].
 
 ### Fixed
 - Compiler error when Newtonsoft JSON package was not installed.
@@ -352,7 +381,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI maintenance
 
 ### Fixed
-- Updated references to [KTX for Unity][KtxForUnity]
+- Updated references to [KTX for Unity]
 
 ## [6.0.1] - 2023-10-11
 
@@ -411,7 +440,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added proper root namespace to all assembly definitions
 - License and copyright notices
 - (Export) Increased performance due to concurrent buffer conversions
-- Support for KTX (Khronos Texture) is now provided by [*KTX for Unity* (com.unity.cloud.ktx)][KtxForUnity], which is a fork of and replaces [*KtxUnity* (com.atteneder.ktx)][KtxUnity].
+- Support for KTX (Khronos Texture) is now provided by [*KTX for Unity* (com.unity.cloud.ktx)][Ktx for Unity], which is a fork of and replaces [*KtxUnity* (com.atteneder.ktx)][KtxUnity].
 
 ## [5.0.4] - 2023-03-30
 
@@ -1401,9 +1430,9 @@ This release contains multiple breaking changes. Please read the [upgrade guide]
 [Collections]: https://docs.unity3d.com/Packages/com.unity.collections@latest/
 [JobsPkg]: https://docs.unity3d.com/Packages/com.unity.jobs@latest/
 [KtxUnity]: https://github.com/atteneder/KtxUnity
-[KtxForUnity]: https://docs.unity3d.com/Packages/com.unity.cloud.ktx@latest/
+[Ktx for Unity]: https://docs.unity3d.com/Packages/com.unity.cloud.ktx@latest/
 [DanDovi]: https://github.com/DanDovi
-[DracoForUnity]: https://docs.unity3d.com/Packages/com.unity.cloud.draco@latest
+[Draco for Unity]: https://docs.unity3d.com/Packages/com.unity.cloud.draco@latest
 [DracoUnity]: https://github.com/atteneder/DracoUnity
 [PolySpatialVisionOS]: https://docs.unity3d.com/Packages/com.unity.polyspatial.visionos@latest/
 [meshoptUnity]: https://docs.unity3d.com/Packages/com.unity.meshopt.decompress@latest/

@@ -47,6 +47,7 @@ namespace GLTFast.Schema
         public int Buffer => buffer;
         public int ByteOffset => byteOffset;
         public int ByteLength => byteLength;
+        public int ByteStride => byteStride;
 
         public Mode GetMode() {
             if (m_ModeEnum != Mode.Undefined) {

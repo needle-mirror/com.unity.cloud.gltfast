@@ -30,7 +30,7 @@ namespace GLTFast
         public abstract bool ScheduleVertexUVJobs(
             int offset,
             int[] uvAccessorIndices,
-            NativeSlice<JobHandle> handles,
+            NativeArray<JobHandle> handles,
             IGltfBuffers buffers
             );
         public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream);
@@ -49,7 +49,7 @@ namespace GLTFast
         protected abstract void Dispose(bool disposing);
     }
 
-    class VertexBufferTexCoords<T> : VertexBufferTexCoordsBase where T : struct
+    class VertexBufferTexCoords<T> : VertexBufferTexCoordsBase where T : unmanaged
     {
         NativeArray<T> m_Data;
 
@@ -66,7 +66,7 @@ namespace GLTFast
         public override unsafe bool ScheduleVertexUVJobs(
             int offset,
             int[] uvAccessorIndices,
-            NativeSlice<JobHandle> handles,
+            NativeArray<JobHandle> handles,
             IGltfBuffers buffers
             )
         {
@@ -155,21 +155,21 @@ namespace GLTFast
             switch (inputType)
             {
                 case GltfComponentType.Float:
+                {
+                    var jobUv = new Jobs.ConvertUVsFloatToFloatInterleavedJob
                     {
-                        var jobUv = new Jobs.ConvertUVsFloatToFloatInterleavedJob
-                        {
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : sizeof(float2),
-                            input = (byte*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = (inputByteStride > 0) ? inputByteStride : sizeof(float2),
+                        input = (byte*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = jobUv.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = jobUv.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = jobUv.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                    }
-                    break;
+                }
+                break;
                 case GltfComponentType.UnsignedByte:
                     if (normalized)
                     {

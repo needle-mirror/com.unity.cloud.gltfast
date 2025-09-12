@@ -37,17 +37,5 @@ namespace GLTFast
             var ptr = (uint*)((byte*)data.GetUnsafeReadOnlyPtr() + offset);
             return *ptr;
         }
-
-        // TODO: Return NativeArray<byte>.ReadOnly
-        internal static unsafe NativeSlice<byte> Slice(this NativeArray<byte>.ReadOnly data, int start, int length)
-        {
-            var bufferAddress = (byte*)data.GetUnsafeReadOnlyPtr() + start;
-            var subArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(bufferAddress, length, Allocator.None);
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            var safetyHandle = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(array: ref subArray, safetyHandle);
-#endif
-            return subArray;
-        }
     }
 }

@@ -12,7 +12,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
 using Draco.Encode;
 #endif
 using GLTFast.Schema;
@@ -900,7 +900,7 @@ namespace GLTFast.Export
 
             if ((m_Settings.Compression & Compression.Draco) != 0)
             {
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
                 RegisterExtensionUsage(Extension.DracoMeshCompression);
                 if (m_Settings.DracoSettings == null)
                 {
@@ -930,7 +930,7 @@ namespace GLTFast.Export
             for (var meshId = 0; meshId < m_Meshes.Count; meshId++)
             {
                 Task task;
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
                 if ((m_Settings.Compression & Compression.Draco) != 0)
                 {
                     task = BakeMeshDraco(meshId);
@@ -1535,7 +1535,11 @@ namespace GLTFast.Export
         async Task<int> WriteBindPosesToBuffer(Matrix4x4[] bindposes)
         {
             var bufferViewId = -1;
+#pragma warning disable CS0618 // Type or member is obsolete
+            // See original ObsoleteAttribute:
+            // > ManagedNativeArray is going to get sealed or removed from the public API in a future release.
             var nativeBindPoses = new ManagedNativeArray<Matrix4x4, float4x4>(bindposes);
+#pragma warning restore CS0618 // Type or member is obsolete
             var matrices = nativeBindPoses.nativeArray;
             var job = new ExportJobs.ConvertMatrixJob
             {
@@ -1555,7 +1559,7 @@ namespace GLTFast.Export
             return bufferViewId;
         }
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
         async Task BakeMeshDraco(int meshId)
         {
             var mesh = m_Meshes[meshId];
@@ -1723,7 +1727,7 @@ namespace GLTFast.Export
                     break;
             }
         }
-#endif // DRACO_UNITY
+#endif // DRACO_IS_INSTALLED
 
         int AddAccessor(Accessor accessor)
         {
@@ -2261,6 +2265,7 @@ namespace GLTFast.Export
 #endif
                 var bufferViewId = WriteBufferViewToBuffer(nativeData, target, byteStride);
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
+                AtomicSafetyHandle.CheckDeallocateAndThrow(safetyHandle);
                 AtomicSafetyHandle.Release(safetyHandle);
 #endif
                 bufferHandle.Free();

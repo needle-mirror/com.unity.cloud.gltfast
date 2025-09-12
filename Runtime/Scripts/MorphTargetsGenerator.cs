@@ -158,7 +158,7 @@ namespace GLTFast
             var handles = new NativeArray<JobHandle>(jobCount, VertexBufferGeneratorBase.defaultAllocator);
             var handleIndex = 0;
 
-            if (!SchedulePositionsJobs(offset, buffers, posData, posAcc, posByteStride, handles, ref handleIndex))
+            if (!SchedulePositionsJobs(offset, buffers, posData, posAcc, handles, ref handleIndex))
                 return null;
 
             if (nrmAcc != null
@@ -191,7 +191,6 @@ namespace GLTFast
             IGltfBuffers buffers,
             void* posData,
             AccessorBase posAcc,
-            int posByteStride,
             NativeArray<JobHandle> handles,
             ref int handleIndex
             )
@@ -202,10 +201,8 @@ namespace GLTFast
                 if (posData != null)
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
-                        posData,
-                        posAcc.count,
-                        posAcc.componentType,
-                        posByteStride,
+                        buffers,
+                        posAcc,
                         (float3*)dest,
                         12,
                         posAcc.normalized,
@@ -269,10 +266,8 @@ namespace GLTFast
                 if (nrmAcc.bufferView >= 0)
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
-                        nrmInput,
-                        nrmAcc.count,
-                        nrmAcc.componentType,
-                        nrmInputByteStride,
+                        buffers,
+                        nrmAcc,
                         (float3*)dest,
                         12,
                         nrmAcc.normalized,
@@ -336,10 +331,8 @@ namespace GLTFast
                 if (tanAcc.bufferView >= 0)
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
-                        tanInput,
-                        tanAcc.count,
-                        tanAcc.componentType,
-                        tanInputByteStride,
+                        buffers,
+                        tanAcc,
                         (float3*)dest,
                         12,
                         tanAcc.normalized,

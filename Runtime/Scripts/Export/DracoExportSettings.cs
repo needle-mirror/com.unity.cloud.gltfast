@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
 using Draco.Encode;
 #endif
 
@@ -33,7 +33,7 @@ namespace GLTFast.Export
         /// <summary>Color quantization.</summary>
         public int colorQuantization = 8;
 
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
         public static implicit operator QuantizationSettings(DracoExportSettings s) => new QuantizationSettings(
             s.positionQuantization,
             s.normalQuantization,

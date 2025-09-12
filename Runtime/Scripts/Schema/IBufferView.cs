@@ -24,5 +24,11 @@ namespace GLTFast.Schema
         /// The length of the bufferView in bytes.
         /// </summary>
         int ByteLength { get; }
+
+        /// <summary>
+        /// The stride, in bytes, between vertex attributes.
+        /// </summary>
+        /// <remarks>When this is 0 or negative, data is tightly packed.</remarks>
+        int ByteStride { get; }
     }
 }

@@ -181,37 +181,37 @@ namespace GLTFast
 #endif
                     break;
                 case GltfComponentType.UnsignedShort:
+                {
+                    var job = new ConvertBoneWeightsUInt16ToFloatInterleavedJob
                     {
-                        var job = new ConvertBoneWeightsUInt16ToFloatInterleavedJob
-                        {
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
-                            input = (byte*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
+                        input = (byte*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                        break;
-                    }
+                    break;
+                }
                 case GltfComponentType.UnsignedByte:
+                {
+                    var job = new ConvertBoneWeightsUInt8ToFloatInterleavedJob
                     {
-                        var job = new ConvertBoneWeightsUInt8ToFloatInterleavedJob
-                        {
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
-                            input = (byte*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
+                        input = (byte*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                        break;
-                    }
+                    break;
+                }
                 default:
                     m_Logger?.Error(LogCode.TypeUnsupported, "Weights", inputType.ToString());
                     jobHandle = null;

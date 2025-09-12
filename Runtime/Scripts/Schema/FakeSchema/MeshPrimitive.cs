@@ -13,7 +13,7 @@ namespace GLTFast.FakeSchema
     [System.Serializable]
     class MeshPrimitiveExtensions
     {
-#if DRACO_UNITY
+#if DRACO_IS_INSTALLED
         public string KHR_draco_mesh_compression;
 #endif
         public string KHR_materials_variants;

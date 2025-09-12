@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.13.1",
+  "version": "6.14.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2021.3",
@@ -19,7 +19,7 @@
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
     "com.unity.mathematics": "1.2.6",
-    "com.unity.burst": "1.8.4",
+    "com.unity.burst": "1.8.24",
     "com.unity.collections": "1.2.4"
   },
   "relatedPackages": {
@@ -27,15 +27,15 @@
   },
   "unityRelease": "46f1",
   "_upm": {
-    "changelog": "### Added\n- (Test) Menu items that make switching test setups and render pipelines more accessible.\n- (Test) JSON parsing performance tests.\n- (Tools) Scripts for resetting test materials and settings.\n\n### Changed\n- Refactored `JsonParsingTests`.\n- Ensured loggers are used in all tests and examples.\n\n### Fixed\n- (Import) Prevented `NullReferenceException` on transmissive materials with no transmissive texture.\n- (Import) Potential `NullReferenceException` when clearcoat is applied without a texture.\n- Incorrect version define for the Unity Collections package. glTFast now properly uses older versions (1.4.0) as well.\n\n### Removed\n- [Playables](https://docs.unity3d.com/Manual/Playables.html) option for runtime animation imports.\n- (Documentation) Use case for custom [Playables](https://docs.unity3d.com/Manual/Playables.html) animation implementation."
+    "changelog": "### Added\n- Graphics Tests.\n- [EditorConfig](https://editorconfig.org/) for keeping a consistent code-style.\n- [IBufferView.ByteStride](xref:GLTFast.Schema.IBufferView.ByteStride).\n\n### Changed\n- (CI) Consolidated multiple redundant packaging and vetting/API validation jobs.\n- Changed internal buffer representation to custom native collection `ReadOnlyBuffer<byte>` (instead of [NativeArray&lt;byte&gt;.ReadOnly](xref:Unity.Collections.NativeArray`1.ReadOnly)) This enables sub-array slicing, has in-Editor safety checks and prepares for decommissioning misuse of NativeSlice.\n- Bumped Burst dependency version to 1.8.24, which is the recommended version in 2021 xLTS.\n- [KTX for Unity] minimum required version was raised to 3.5.0.\n- [Draco for Unity] minimum required version was raised to 5.2.0.\n\n### Fixed\n- (Export) Spotlight's inner cone angle is exported correctly on HDRP now.\n- (Test) Disabled URP compatibility mode in URP presets as it's obsolete and unsupported from Unity 6.3 onward.\n- (Import) Spotlight's inner cone angle is imported correctly on HDRP now.\n\n### Removed\n- (CI) SonarQube scan job.\n\n### Deprecated\n- [GLTFast.ManagedNativeArray](xref:GLTFast.ManagedNativeArray`2). It will be removed from public API in a future release. For internal development it's been replaced by `ReadOnlyBufferManagedArray<T>`.\n- [GLTFast.Export.ManagedNativeArray](xref:GLTFast.Export.ManagedNativeArray`2). It will get sealed or removed from public API in a future release.\n- [IGltfReadable.GetAccessorData](xref:GLTFast.IGltfReadable.GetAccessorData(System.Int32)). Along with [IGltfReadable.GetAccessor](xref:GLTFast.IGltfReadable.GetAccessor(System.Int32)) it is going to be removed and replaced with an improved way to access accessors' data in a future release.\n\n### Security"
   },
   "upmCi": {
-    "footprint": "4a61e43c26ae5dd5053037788537f06743d42b5c"
+    "footprint": "4b40bb620de7cf54756e252d9b9d0b71bdc7741a"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.13/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.14/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "e88f5971ca8147475e49bed3e1eab57a94839155"
+    "revision": "84dfeac2a3fd94b6f590ae95a87848bb2fd1e4d9"
   }
 }

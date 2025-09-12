@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace GLTFast.Export
 {
-    class MeshDataProxy<TIndex> : IMeshData<TIndex> where TIndex : struct
+    class MeshDataProxy<TIndex> : IMeshData<TIndex> where TIndex : unmanaged
     {
         Mesh.MeshData m_MeshData;
 

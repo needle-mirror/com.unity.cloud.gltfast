@@ -77,6 +77,9 @@ namespace GLTFast.Schema
         /// <inheritdoc cref="IBufferView.ByteLength"/>
         public int ByteLength => byteLength;
 
+        /// <inheritdoc cref="IBufferView.ByteStride"/>
+        public int ByteStride => byteStride;
+
         internal void GltfSerialize(JsonWriter writer)
         {
             writer.AddObject();

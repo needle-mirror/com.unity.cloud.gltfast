@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
+using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -38,7 +39,7 @@ namespace GLTFast
 
         public abstract void AddPrimitive(Attributes att);
         public abstract void Initialize();
-        public abstract JobHandle? CreateVertexBuffer();
+        public abstract Task<bool> CreateVertexBuffer();
 
         public abstract void ApplyOnMesh(UnityEngine.Mesh msh, MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags);
         public abstract int VertexCount { get; }
@@ -57,20 +58,16 @@ namespace GLTFast
         /// <summary>
         /// Schedules a job that converts input data into float3 arrays.
         /// </summary>
-        /// <param name="input">Points at the input data in memory</param>
-        /// <param name="count">Attribute quantity</param>
-        /// <param name="inputType">Input data type</param>
-        /// <param name="inputByteStride">Input byte stride</param>
+        /// <param name="buffers">Buffer provider</param>
+        /// <param name="accessor">glTF accessor</param>
         /// <param name="output">Points at the destination buffer in memory</param>
         /// <param name="outputByteStride">Output byte stride</param>
         /// <param name="normalized">If true, integer values have to be normalized</param>
         /// <param name="ensureUnitLength">If true, normalized values will be scaled to have unit length again (only if <see cref="normalized"/>is true)</param>
         /// <returns></returns>
         public static unsafe JobHandle? GetVector3Job(
-            void* input,
-            int count,
-            GltfComponentType inputType,
-            int inputByteStride,
+            IGltfBuffers buffers,
+            AccessorBase accessor,
             float3* output,
             int outputByteStride,
             bool normalized = false,
@@ -80,58 +77,70 @@ namespace GLTFast
             JobHandle? jobHandle;
 
             Profiler.BeginSample("GetVector3Job");
-            if (inputType == GltfComponentType.Float)
+            if (accessor.componentType == GltfComponentType.Float)
             {
+                var input = buffers.GetStridedAccessorData<float3>(
+                    accessor.bufferView,
+                    accessor.count,
+                    accessor.byteOffset
+                );
                 var job = new ConvertVector3FloatToFloatInterleavedJob
                 {
-                    inputByteStride = (inputByteStride > 0) ? inputByteStride : 12,
-                    input = (byte*)input,
+                    input = input,
                     outputByteStride = outputByteStride,
                     result = output
                 };
 #if UNITY_COLLECTIONS
-                jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                jobHandle = job.ScheduleBatch(accessor.count,GltfImport.DefaultBatchCount);
 #else
-                jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
             }
             else
-            if (inputType == GltfComponentType.UnsignedShort)
+            if (accessor.componentType == GltfComponentType.UnsignedShort)
             {
+                var input = buffers.GetStridedAccessorData<ushort3>(
+                    accessor.bufferView,
+                    accessor.count,
+                    accessor.byteOffset
+                );
                 if (normalized)
                 {
                     var job = new ConvertPositionsUInt16ToFloatInterleavedNormalizedJob
                     {
-                        inputByteStride = (inputByteStride > 0) ? inputByteStride : 6,
-                        input = (byte*)input,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count,GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
                 else
                 {
                     var job = new ConvertPositionsUInt16ToFloatInterleavedJob
                     {
-                        inputByteStride = (inputByteStride > 0) ? inputByteStride : 6,
-                        input = (byte*)input,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count,GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
             }
             else
-            if (inputType == GltfComponentType.Short)
+            if (accessor.componentType == GltfComponentType.Short)
             {
+                var input = buffers.GetStridedAccessorData<short3>(
+                    accessor.bufferView,
+                    accessor.count,
+                    accessor.byteOffset
+                );
                 if (normalized)
                 {
                     if (ensureUnitLength)
@@ -139,30 +148,28 @@ namespace GLTFast
                         // TODO: test. did not have test files
                         var job = new ConvertNormalsInt16ToFloatInterleavedNormalizedJob
                         {
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : 6,
-                            input = (byte*)input,
+                            input = input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
 #if UNITY_COLLECTIONS
-                        jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                        jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                     }
                     else
                     {
                         var job = new ConvertVector3Int16ToFloatInterleavedNormalizedJob
                         {
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : 6,
-                            input = (byte*)input,
+                            input = input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
 #if UNITY_COLLECTIONS
-                        jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                        jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                     }
                 }
@@ -170,51 +177,53 @@ namespace GLTFast
                 {
                     var job = new ConvertPositionsInt16ToFloatInterleavedJob
                     {
-                        inputByteStride = (inputByteStride > 0) ? inputByteStride : 6,
-                        input = (byte*)input,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
             }
             else
-            if (inputType == GltfComponentType.Byte)
+            if (accessor.componentType == GltfComponentType.Byte)
             {
+                var input = buffers.GetStridedAccessorData<sbyte3>(
+                    accessor.bufferView,
+                    accessor.count,
+                    accessor.byteOffset
+                );
                 if (normalized)
                 {
                     if (ensureUnitLength)
                     {
                         var job = new ConvertNormalsInt8ToFloatInterleavedNormalizedJob
                         {
-                            input = (sbyte*)input,
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : 3,
+                            input = input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
 #if UNITY_COLLECTIONS
-                        jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                        jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                     }
                     else
                     {
                         var job = new ConvertVector3Int8ToFloatInterleavedNormalizedJob()
                         {
-                            input = (sbyte*)input,
-                            inputByteStride = (inputByteStride > 0) ? inputByteStride : 3,
+                            input = input,
                             outputByteStride = outputByteStride,
                             result = output
                         };
 #if UNITY_COLLECTIONS
-                        jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                        jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                     }
                 }
@@ -223,50 +232,52 @@ namespace GLTFast
                     // TODO: test positions. did not have test files
                     var job = new ConvertPositionsInt8ToFloatInterleavedJob
                     {
-                        inputByteStride = inputByteStride > 0 ? inputByteStride : 3,
-                        input = (sbyte*)input,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
             }
             else
-            if (inputType == GltfComponentType.UnsignedByte)
+            if (accessor.componentType == GltfComponentType.UnsignedByte)
             {
+                var input = buffers.GetStridedAccessorData<byte3>(
+                    accessor.bufferView,
+                    accessor.count,
+                    accessor.byteOffset
+                );
                 // TODO: test. did not have test files
                 if (normalized)
                 {
                     var job = new ConvertPositionsUInt8ToFloatInterleavedNormalizedJob
                     {
-                        input = (byte*)input,
-                        inputByteStride = (inputByteStride > 0) ? inputByteStride : 3,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
                 else
                 {
                     var job = new ConvertPositionsUInt8ToFloatInterleavedJob
                     {
-                        input = (byte*)input,
-                        inputByteStride = (inputByteStride > 0) ? inputByteStride : 3,
+                        input = input,
                         outputByteStride = outputByteStride,
                         result = output
                     };
 #if UNITY_COLLECTIONS
-                    jobHandle = job.ScheduleBatch(count,GltfImport.DefaultBatchCount);
+                    jobHandle = job.ScheduleBatch(accessor.count, GltfImport.DefaultBatchCount);
 #else
-                    jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = job.Schedule(accessor.count, GltfImport.DefaultBatchCount);
 #endif
                 }
             }
@@ -294,55 +305,55 @@ namespace GLTFast
             switch (inputType)
             {
                 case GltfComponentType.Float:
+                {
+                    var jobTangent = new ConvertTangentsFloatToFloatInterleavedJob
                     {
-                        var jobTangent = new ConvertTangentsFloatToFloatInterleavedJob
-                        {
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 16,
-                            input = (byte*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = inputByteStride > 0 ? inputByteStride : 16,
+                        input = (byte*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = jobTangent.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                        break;
-                    }
+                    break;
+                }
                 case GltfComponentType.Short:
+                {
+                    Assert.IsTrue(normalized);
+                    var jobTangent = new ConvertTangentsInt16ToFloatInterleavedNormalizedJob
                     {
-                        Assert.IsTrue(normalized);
-                        var jobTangent = new ConvertTangentsInt16ToFloatInterleavedNormalizedJob
-                        {
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
-                            input = (short*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
+                        input = (short*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = jobTangent.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                        break;
-                    }
+                    break;
+                }
                 case GltfComponentType.Byte:
+                {
+                    Assert.IsTrue(normalized);
+                    var jobTangent = new ConvertTangentsInt8ToFloatInterleavedNormalizedJob
                     {
-                        Assert.IsTrue(normalized);
-                        var jobTangent = new ConvertTangentsInt8ToFloatInterleavedNormalizedJob
-                        {
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
-                            input = (sbyte*)input,
-                            outputByteStride = outputByteStride,
-                            result = output
-                        };
+                        inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
+                        input = (sbyte*)input,
+                        outputByteStride = outputByteStride,
+                        result = output
+                    };
 #if UNITY_COLLECTIONS
                     jobHandle = jobTangent.ScheduleBatch(count,GltfImport.DefaultBatchCount);
 #else
-                        jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
+                    jobHandle = jobTangent.Schedule(count, GltfImport.DefaultBatchCount);
 #endif
-                        break;
-                    }
+                    break;
+                }
                 default:
                     m_GltfImport.Logger?.Error(LogCode.TypeUnsupported, "Tangent", inputType.ToString());
                     jobHandle = null;

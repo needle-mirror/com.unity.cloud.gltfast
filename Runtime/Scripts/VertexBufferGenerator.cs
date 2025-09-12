@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using GLTFast.Logging;
 using GLTFast.Schema;
 using GLTFast.Vertex;
@@ -20,7 +21,7 @@ namespace GLTFast
 {
     class VertexBufferGenerator<TMainBuffer> :
         VertexBufferGeneratorBase
-        where TMainBuffer : struct
+        where TMainBuffer : unmanaged
     {
         NativeArray<TMainBuffer> m_Data;
 
@@ -87,7 +88,21 @@ namespace GLTFast
             VertexIntervals[m_Attributes.Length] = vertexCount;
         }
 
-        public override unsafe JobHandle? CreateVertexBuffer()
+        public override async Task<bool> CreateVertexBuffer()
+        {
+            var jh = CreateVertexBufferHandle();
+            if (!jh.HasValue)
+                return false;
+
+            while (!jh.Value.IsCompleted)
+            {
+                await Task.Yield();
+            }
+            jh.Value.Complete();
+            return true;
+        }
+
+        unsafe JobHandle? CreateVertexBufferHandle()
         {
             Profiler.BeginSample("AllocateNativeArray");
             m_Data = new NativeArray<TMainBuffer>(VertexCount, defaultAllocator);
@@ -203,16 +218,9 @@ namespace GLTFast
 
             if (m_PositionAccessors[i].bufferView >= 0)
             {
-                ((IGltfBuffers)m_GltfImport).GetAccessorDataAndByteStride(
-                    m_Attributes[i].POSITION,
-                    out var posData,
-                    out var posByteStride
-                );
                 h = GetVector3Job(
-                    posData.GetUnsafeReadOnlyPtr(),
-                    m_PositionAccessors[i].count,
-                    m_PositionAccessors[i].componentType,
-                    posByteStride,
+                    m_GltfImport,
+                    m_PositionAccessors[i],
                     (float3*)(vDataPtr + outputByteStride * VertexIntervals[i]),
                     outputByteStride,
                     m_PositionAccessors[i].normalized,
@@ -275,10 +283,8 @@ namespace GLTFast
             }
 
             var h = GetVector3Job(
-                input,
-                nrmAcc.count,
-                nrmAcc.componentType,
-                inputByteStride,
+                m_GltfImport,
+                nrmAcc,
                 (float3*)(vDataPtr + outputByteStride * VertexIntervals[i] + 12),
                 outputByteStride,
                 nrmAcc.normalized
@@ -344,7 +350,7 @@ namespace GLTFast
             m_TexCoords.ScheduleVertexUVJobs(
                 VertexIntervals[i],
                 uvAccessors,
-                handles.Slice(handleIndex, uvAccessors.Length),
+                handles.GetSubArray(handleIndex, uvAccessors.Length),
                 m_GltfImport
             );
             handleIndex += uvAccessors.Length;
@@ -356,7 +362,7 @@ namespace GLTFast
             var success = m_Colors.ScheduleVertexColorJob(
                 att.COLOR_0,
                 VertexIntervals[i],
-                handles.Slice(handleIndex, 1),
+                handles.GetSubArray(handleIndex, 1),
                 m_GltfImport
             );
             if (!success)

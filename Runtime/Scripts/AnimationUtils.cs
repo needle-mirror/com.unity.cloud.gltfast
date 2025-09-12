@@ -10,6 +10,7 @@ using GLTFast.Schema;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 
 namespace GLTFast {
@@ -18,27 +19,20 @@ namespace GLTFast {
 
         const float k_TimeEpsilon = 0.00001f;
 
-        public static void AddTranslationCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<Vector3> translations, InterpolationType interpolationType) {
-            // TODO: Refactor interface to use Unity.Mathematics types and remove this Reinterpret
-            var values = translations.Reinterpret<float3>();
+        public static void AddTranslationCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<float3> values, InterpolationType interpolationType) {
             AddVec3Curves(clip, animationPath, "localPosition.", times, values, interpolationType);
         }
 
-        public static void AddScaleCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<Vector3> translations, InterpolationType interpolationType) {
-            // TODO: Refactor interface to use Unity.Mathematics types and remove this Reinterpret
-            var values = translations.Reinterpret<float3>();
+        public static void AddScaleCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<float3> values, InterpolationType interpolationType) {
             AddVec3Curves(clip, animationPath, "localScale.", times, values, interpolationType);
         }
 
-        public static void AddRotationCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<Quaternion> quaternions, InterpolationType interpolationType) {
+        public static void AddRotationCurves(AnimationClip clip, string animationPath, NativeArray<float> times, NativeArray<quaternion> values, InterpolationType interpolationType) {
             Profiler.BeginSample("AnimationUtils.AddRotationCurves");
             var rotX = new AnimationCurve();
             var rotY = new AnimationCurve();
             var rotZ = new AnimationCurve();
             var rotW = new AnimationCurve();
-
-            // TODO: Refactor interface to use Unity.Mathematics types and remove this Reinterpret
-            var values = quaternions.Reinterpret<quaternion>();
 
 #if DEBUG
             uint duplicates = 0;
@@ -74,6 +68,7 @@ namespace GLTFast {
                     var prevValue = values[0];
                     var inTangent = new quaternion(new float4(0f));
 
+                    Assert.AreEqual(times.Length,values.Length);
                     for (var i = 1; i < times.Length; i++) {
                         var time = times[i];
                         var value = values[i];

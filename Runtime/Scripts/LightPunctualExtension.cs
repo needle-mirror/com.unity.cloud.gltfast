@@ -59,6 +59,13 @@ namespace GLTFast
             {
                 lightDestination.spotAngle = lightSource.spot.outerConeAngle * Mathf.Rad2Deg * 2f;
                 lightDestination.innerSpotAngle = lightSource.spot.innerConeAngle * Mathf.Rad2Deg * 2f;
+#if USING_HDRP && !UNITY_6000_3_OR_NEWER
+                var lightHd = lightDestination.gameObject.GetComponent<HDAdditionalLightData>();
+                lightHd.SetSpotAngle(
+                    lightSource.spot.outerConeAngle * Mathf.Rad2Deg * 2f,
+                    100 * lightSource.spot.innerConeAngle / lightSource.spot.outerConeAngle
+                );
+#endif
             }
         }
 

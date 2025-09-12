@@ -17,7 +17,7 @@ using UnityEngine.Rendering;
 
 namespace GLTFast.Export
 {
-    class NonReadableMeshData<TIndex> : IMeshData<TIndex> where TIndex : struct
+    class NonReadableMeshData<TIndex> : IMeshData<TIndex> where TIndex : unmanaged
     {
         Mesh m_Mesh;
 
