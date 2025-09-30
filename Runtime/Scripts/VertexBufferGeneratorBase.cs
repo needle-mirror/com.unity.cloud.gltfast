@@ -19,6 +19,9 @@ namespace GLTFast
 
     abstract class VertexBufferGeneratorBase : IDisposable
     {
+        /// <summary>Maximum number of texture coordinate sets Unity supports.</summary>
+        /// <seealso href="https://docs.unity3d.com/6000.2/Documentation/ScriptReference/Mesh.html"/>
+        public const int maxUvSetCount = 8;
 
         public const Allocator defaultAllocator = Allocator.Persistent;
 

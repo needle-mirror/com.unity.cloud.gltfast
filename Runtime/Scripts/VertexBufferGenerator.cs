@@ -116,10 +116,11 @@ namespace GLTFast
             var uvSetCount = firstAttributes.GetTexCoordsCount();
             if (uvSetCount > 0)
             {
-                if (uvSetCount > 8)
+                if (uvSetCount > maxUvSetCount)
                 {
                     // More than eight UV sets are not supported yet
                     m_GltfImport.Logger?.Warning(LogCode.UVLimit);
+                    uvSetCount = maxUvSetCount;
                 }
 
                 jobCount += uvSetCount * m_Attributes.Length;

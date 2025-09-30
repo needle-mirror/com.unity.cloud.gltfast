@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.14.1] - 2025-09-30
+
+### Added
+
+### Changed
+- [TryGetAllUVAccessors](xref:GLTFast.Schema.Attributes.TryGetAllUVAccessors*) only returns the first 8, actually supported UV sets (and not the ninth anymore).
+
+### Fixed
+- Avoid crash when loading meshes with more than 8 texture coordinate sets by properly limiting them.
+
+### Removed
+
+### Deprecated
+
+### Security
+
 ## [6.14.0] - 2025-09-12
 
 ### Added
@@ -30,8 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [GLTFast.ManagedNativeArray](xref:GLTFast.ManagedNativeArray`2). It will be removed from public API in a future release. For internal development it's been replaced by `ReadOnlyBufferManagedArray<T>`.
 - [GLTFast.Export.ManagedNativeArray](xref:GLTFast.Export.ManagedNativeArray`2). It will get sealed or removed from public API in a future release.
 - [IGltfReadable.GetAccessorData](xref:GLTFast.IGltfReadable.GetAccessorData(System.Int32)). Along with [IGltfReadable.GetAccessor](xref:GLTFast.IGltfReadable.GetAccessor(System.Int32)) it is going to be removed and replaced with an improved way to access accessors' data in a future release.
-
-### Security
 
 ## [6.13.1] - 2025-07-17
 
