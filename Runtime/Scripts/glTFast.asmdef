@@ -27,7 +27,7 @@
         },
         {
             "name": "com.unity.cloud.draco",
-            "expression": "5.2.0-pre.1",
+            "expression": "5.4.0",
             "define": "DRACO_IS_RECENT"
         },
         {
@@ -37,7 +37,7 @@
         },
         {
             "name": "com.unity.cloud.ktx",
-            "expression": "3.5.0",
+            "expression": "3.6.0",
             "define": "KTX_IS_RECENT"
         },
         {
@@ -49,11 +49,6 @@
             "name": "com.unity.render-pipelines.high-definition",
             "expression": "7.3.1",
             "define": "USING_HDRP"
-        },
-        {
-            "name": "com.unity.render-pipelines.high-definition",
-            "expression": "10.0.0",
-            "define": "USING_HDRP_10_OR_NEWER"
         },
         {
             "name": "com.unity.render-pipelines.high-definition",
@@ -91,19 +86,9 @@
             "define": "MESHOPT"
         },
         {
-            "name": "com.unity.render-pipelines.universal",
-            "expression": "12",
-            "define": "USING_URP_12_OR_NEWER"
-        },
-        {
             "name": "com.unity.shadergraph",
             "expression": "",
             "define": "UNITY_SHADER_GRAPH"
-        },
-        {
-            "name": "com.unity.shadergraph",
-            "expression": "12",
-            "define": "UNITY_SHADER_GRAPH_12_OR_NEWER"
         },
         {
             "name": "com.unity.nuget.newtonsoft-json",

@@ -13,22 +13,21 @@ using Unity.Collections;
 
 namespace GLTFast {
     class KtxLoadContext : KtxLoadContextBase {
-        NativeArray<byte>.ReadOnly m_Data;
 
-        public KtxLoadContext(int index, NativeArray<byte>.ReadOnly data) {
-            imageIndex = index;
-            m_Data = data;
+        readonly KtxTexture m_KtxTexture;
+
+        public KtxLoadContext(int imageIndex, NativeArray<byte>.ReadOnly data) : base(imageIndex, data)
+        {
             m_KtxTexture = new KtxTexture();
         }
 
-        public override async Task<TextureResult> LoadTexture2D(bool linear) {
-            // TODO: Wait for KTX for Unity to offer a non-slice API and avoid slice here.
+        public override async Task<TextureResult> LoadTexture2D(bool linear, bool readable) {
             var errorCode = m_KtxTexture.Open(m_Data);
             if (errorCode != ErrorCode.Success) {
                 return new TextureResult(errorCode);
             }
 
-            var result = await m_KtxTexture.LoadTexture2D(linear);
+            var result = await m_KtxTexture.LoadTexture2D(linear, readable);
 
             m_KtxTexture.Dispose();
             return result;

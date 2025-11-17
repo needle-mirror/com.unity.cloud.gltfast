@@ -8,13 +8,13 @@
 #if KTX_IS_RECENT
 #define KTX_IS_ENABLED
 #elif KTX_IS_INSTALLED
-#warning You have to update *KTX for Unity* to enable support for KTX textures in glTFast
+#error You have to update the *KTX for Unity* package in package manager to enable support for KTX textures in *glTFast*.
 #endif
 
 #if DRACO_IS_RECENT
 #define DRACO_IS_ENABLED
 #elif DRACO_IS_INSTALLED
-#warning You have to update the *Draco for Unity* package to enable support for decompressing Draco meshes in glTFast.
+#error You have to update the *Draco for Unity* package in package manager to enable support for decompressing Draco meshes in *glTFast*.
 #endif
 
 // #define MEASURE_TIMINGS
@@ -30,9 +30,6 @@ using System;
 using System.Text;
 using GLTFast.Addons;
 using GLTFast.Jobs;
-#if MEASURE_TIMINGS
-using GLTFast.Tests;
-#endif
 #if KTX_IS_ENABLED
 using KtxUnity;
 #endif
@@ -194,22 +191,23 @@ namespace GLTFast
         GlbBinChunk[] m_BinChunks;
 
         Dictionary<int, Task<IDownload>> m_DownloadTasks;
+
+#if UNITY_IMAGECONVERSION
+        Dictionary<int, TextureDownloadBase> m_TextureDownloadTasks;
+#if !UNITY_6000_0_OR_NEWER
+        List<ImageCreateContext> m_ImageCreateContexts;
+#endif // !UNITY_6000_0_OR_NEWER
+#endif // UNITY_IMAGECONVERSION
 #if KTX_IS_ENABLED
         Dictionary<int,Task<IDownload>> m_KtxDownloadTasks;
-#endif
-        Dictionary<int, TextureDownloadBase> m_TextureDownloadTasks;
+        List<KtxLoadContextBase> m_KtxLoadContextsBuffer;
+#endif // KTX_IS_ENABLED
 
         IDisposable[] m_AccessorData;
         AccessorUsage[] m_AccessorUsage;
         JobHandle m_AccessorJobsHandle;
 
         List<MeshOrder> m_MeshOrders;
-
-        List<ImageCreateContext> m_ImageCreateContexts;
-#if KTX_IS_ENABLED
-        List<KtxLoadContextBase> m_KtxLoadContextsBuffer;
-#endif // KTX_IS_ENABLED
-
 
         /// <summary>
         /// Loaded glTF images (Raw texture without sampler settings)
@@ -396,7 +394,7 @@ namespace GLTFast
         /// <param name="url">Uniform Resource Locator. Can be a file path (using the "file://" scheme) or a web address.</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> Load(
             string url,
             ImportSettings importSettings = null,
@@ -413,7 +411,7 @@ namespace GLTFast
         /// <param name="url">Uniform Resource Locator. Can be a file path (using the "file://" scheme) or a web address.</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> Load(
             Uri url,
             ImportSettings importSettings = null,
@@ -431,7 +429,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> Load(
             byte[] data,
             Uri uri = null,
@@ -457,7 +455,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> Load(
             NativeArray<byte>.ReadOnly data,
             Uri uri = null,
@@ -483,7 +481,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> LoadFile(
             string localPath,
             Uri uri = null,
@@ -491,12 +489,12 @@ namespace GLTFast
             CancellationToken cancellationToken = default
             )
         {
-#if UNITY_2021_3_OR_NEWER && NET_STANDARD_2_1
+#if NET_STANDARD_2_1
             await using
 #endif
             var fs = new FileStream(localPath, FileMode.Open, FileAccess.Read);
             var result = await LoadStream(fs, uri, importSettings, cancellationToken);
-#if !UNITY_2021_3_OR_NEWER || !NET_STANDARD_2_1
+#if !NET_STANDARD_2_1
             fs.Dispose();
 #endif
             return result;
@@ -509,7 +507,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> LoadStream(
             Stream stream,
             Uri uri = null,
@@ -554,13 +552,8 @@ namespace GLTFast
                 }
                 using var data = new NativeArray<byte>((int)length, Allocator.Persistent);
                 var dataStream = data.ToUnmanagedMemoryStream();
-#if UNITY_2021_3_OR_NEWER
                 await dataStream.WriteAsync(firstBytes, cancellationToken);
                 await dataStream.WriteAsync(glbHeader, cancellationToken);
-#else
-                await dataStream.WriteAsync(firstBytes, 0, firstBytes.Length, cancellationToken);
-                await dataStream.WriteAsync(glbHeader, 0, glbHeader.Length, cancellationToken);
-#endif
                 await stream.CopyToAsync(dataStream, (int)(length - dataStream.Position), cancellationToken);
                 var result = await LoadGltfBinaryInternal(data.AsReadOnly(), uri, importSettings, cancellationToken);
                 return result;
@@ -593,7 +586,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         [Obsolete("Use the generic Load instead.")]
         public async Task<bool> LoadGltfBinary(
             byte[] bytes,
@@ -620,7 +613,7 @@ namespace GLTFast
         /// <param name="uri">Base URI for relative paths of external buffers or images</param>
         /// <param name="importSettings">Import Settings (<see cref="ImportSettings"/> for details)</param>
         /// <param name="cancellationToken">Token to submit cancellation requests. The default value is None.</param>
-        /// <returns>True if loading was successful, false otherwise</returns>
+        /// <returns>True if loading was mainly successful and no critical error occurred, false otherwise</returns>
         public async Task<bool> LoadGltfJson(
             string json,
             Uri uri = null,
@@ -629,9 +622,10 @@ namespace GLTFast
             )
         {
             m_Settings = importSettings ?? new ImportSettings();
-            var success = await LoadGltf(json, uri);
-            if (success) await LoadContent();
-            success = success && await Prepare();
+            var success =
+                await LoadGltf(json, uri)
+                && await LoadContent()
+                && await Prepare();
             DisposeVolatileData();
             LoadingError = !success;
             LoadingDone = true;
@@ -754,11 +748,31 @@ namespace GLTFast
         }
 
         /// <summary>
+        /// Disposes resources that are required for instantiation.
+        /// Does not dispose imported resources (meshes, materials, textures, etc.).
+        /// </summary>
+        internal void DisposeRequiredForInstantiationData()
+        {
+            if (m_AccessorData != null)
+            {
+                for (var index = 0; index < m_AccessorData.Length; index++)
+                {
+                    m_AccessorData[index]?.Dispose();
+                    m_AccessorData[index] = null;
+                }
+
+                m_AccessorData = null;
+            }
+        }
+
+        /// <summary>
         /// Frees up memory by disposing all sub assets.
         /// There can be no instantiation or other element access afterwards.
         /// </summary>
         public void Dispose()
         {
+            DisposeRequiredForInstantiationData();
+
             if (m_ImportInstances != null)
             {
                 foreach (var importInstance in m_ImportInstances)
@@ -791,15 +805,6 @@ namespace GLTFast
 
             DisposeArray(m_Textures);
             m_Textures = null;
-
-            if (m_AccessorData != null)
-            {
-                foreach (var ad in m_AccessorData)
-                {
-                    ad?.Dispose();
-                }
-                m_AccessorData = null;
-            }
 
             m_MeshAssignments = null;
             DisposeArray(m_Meshes);
@@ -1201,11 +1206,9 @@ namespace GLTFast
                     download.Dispose();
                     success = await LoadGltf(text, url);
                 }
-                if (success)
-                {
-                    success = await LoadContent();
-                }
-                success = success && await Prepare();
+                success = success
+                    && await LoadContent()
+                    && await Prepare();
             }
             else
             {
@@ -1226,8 +1229,9 @@ namespace GLTFast
         {
             m_Settings = importSettings ?? new ImportSettings();
             var success = await LoadGltfBinaryBuffer(bytes, uri);
-            if (success) await LoadContent();
-            success = success && await Prepare();
+            success = success
+                && await LoadContent()
+                && await Prepare();
             DisposeVolatileData();
             LoadingError = !success;
             LoadingDone = true;
@@ -1245,15 +1249,18 @@ namespace GLTFast
             }
 #endif
 
+#if UNITY_IMAGECONVERSION
             if (m_TextureDownloadTasks != null)
             {
-                success = success && await WaitForTextureDownloads();
+                if(success)
+                    await WaitForTextureDownloads();
                 m_TextureDownloadTasks.Clear();
             }
-
+#endif // UNITY_IMAGECONVERSION
 #if KTX_IS_ENABLED
             if (m_KtxDownloadTasks != null) {
-                success = success && await WaitForKtxDownloads();
+                if(success)
+                    await WaitForKtxDownloads();
                 m_KtxDownloadTasks.Clear();
             }
 #endif // KTX_IS_ENABLED
@@ -1316,19 +1323,8 @@ namespace GLTFast
                     {
                         if (buffer.uri.StartsWith("data:"))
                         {
-                            var decodedBuffer = await DecodeEmbedBufferAsync(
-                                buffer.uri,
-                                true // usually there's just one buffer and it's time-critical
-                            );
-                            if (decodedBuffer?.Item1 == null)
-                            {
-                                Logger?.Error(LogCode.EmbedBufferLoadFailed);
+                            if (!await LoadBufferFromDataUri(i, buffer))
                                 return false;
-                            }
-                            var decodedNativeBuffer = new ReadOnlyNativeArrayFromManagedArray<byte>(decodedBuffer.Item1);
-                            m_VolatileDisposables ??= new List<IDisposable>();
-                            m_VolatileDisposables.Add(decodedNativeBuffer);
-                            m_Buffers[i] = decodedNativeBuffer.Array;
                         }
                         else
                         {
@@ -1338,6 +1334,31 @@ namespace GLTFast
                 }
             }
 
+            return true;
+        }
+
+        async Task<bool> LoadBufferFromDataUri(int bufferIndex, Buffer buffer)
+        {
+            if (!TryGetBufferDataUriDescriptor(
+                    bufferIndex, buffer.byteLength, buffer.uri, out var startIndex, out var byteLength))
+            {
+                return false;
+            }
+
+            var data = await DecodeDataUriAsync(
+                buffer.uri,
+                startIndex,
+                byteLength,
+                true // usually there's just one buffer and it's time-critical
+            );
+            if (!data.IsCreated)
+            {
+                Logger?.Error(LogCode.EmbedBufferLoadFailed);
+                return false;
+            }
+            m_VolatileDisposables ??= new List<IDisposable>();
+            m_VolatileDisposables.Add(data);
+            m_Buffers[bufferIndex] = new ReadOnlyNativeArray<byte>(data);
             return true;
         }
 
@@ -1431,16 +1452,15 @@ namespace GLTFast
         {
             var baseUri = UriHelper.GetBaseUri(url);
             var success = await ParseJsonAndLoadBuffers(json, baseUri);
-            if (success) await LoadImages(baseUri);
+            if (success)
+                await LoadImages(baseUri);
             return success;
         }
 
         async Task LoadImages(Uri baseUri)
         {
-
             if (Root.Textures != null && Root.Images != null)
             {
-
                 Profiler.BeginSample("LoadImages.Prepare");
 
                 m_Images = new Texture2D[Root.Images.Count];
@@ -1518,9 +1538,9 @@ namespace GLTFast
                     }
                 }
 #endif
-
                 Profiler.EndSample();
-                List<Task> imageTasks = null;
+
+                List<Task<bool>> imageTasks = null;
 
                 for (int imageIndex = 0; imageIndex < Root.Images.Count; imageIndex++)
                 {
@@ -1528,16 +1548,9 @@ namespace GLTFast
 
                     if (!string.IsNullOrEmpty(img.uri) && img.uri.StartsWith("data:"))
                     {
-#if UNITY_IMAGECONVERSION
-                        var decodedBufferTask = DecodeEmbedBufferAsync(img.uri);
-                        if (imageTasks == null) {
-                            imageTasks = new List<Task>();
-                        }
-                        var imageTask = LoadImageFromBuffer(decodedBufferTask, imageIndex, img);
+                        var imageTask = LoadImageFromDataUri(imageIndex, img);
+                        imageTasks ??= new List<Task<bool>>();
                         imageTasks.Add(imageTask);
-#else
-                        Logger?.Warning(LogCode.ImageConversionNotEnabled);
-#endif
                     }
                     else
                     {
@@ -1546,7 +1559,7 @@ namespace GLTFast
                         {
                             imgFormat = string.IsNullOrEmpty(img.mimeType)
                                 ? UriHelper.GetImageFormatFromUri(img.uri)
-                                : GetImageFormatFromMimeType(img.mimeType);
+                                : ImageFormatExtensions.FromMimeType(img.mimeType);
                             m_ImageFormats[imageIndex] = imgFormat;
                         }
                         else
@@ -1564,11 +1577,7 @@ namespace GLTFast
                                     LoadImage(
                                         imageIndex,
                                         UriHelper.GetUriString(img.uri, baseUri),
-#if UNITY_VISIONOS
-                                        false,
-#else
-                                        !m_Settings.TexturesReadable && !m_ImageReadable[imageIndex],
-#endif
+                                        !LoadImageReadable(imageIndex),
                                         imgFormat == ImageFormat.Ktx
                                         );
                                 }
@@ -1592,42 +1601,140 @@ namespace GLTFast
             }
         }
 
-#if UNITY_IMAGECONVERSION
-        async Task LoadImageFromBuffer(Task<Tuple<byte[],string>> decodeBufferTask, int imageIndex, Image img) {
-            var decodedBuffer = await decodeBufferTask;
-            await DeferAgent.BreakPoint();
-            Profiler.BeginSample("LoadImages.FromBase64");
-            var data = decodedBuffer.Item1;
-            string mimeType = decodedBuffer.Item2;
-            var imgFormat = GetImageFormatFromMimeType(mimeType);
-            if (data == null || imgFormat == ImageFormat.Unknown) {
+        // TODO: If no suitable image loader is found, this method won't use the await operator, thus causing a warning.
+        //       For now we'll ignore that warning. In the future, we'll encapsulate this in a better way.
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        async Task<bool> LoadImageFromDataUri(int imageIndex, Image img)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            if (!TryGetImageDataUriDescriptor(img.uri, out var imageFormat, out var startIndex, out var byteLength))
+            {
                 Logger?.Error(LogCode.EmbedImageLoadFailed);
-                return;
+                return false;
             }
+            m_ImageFormats[imageIndex] = imageFormat;
 
-            if (m_ImageFormats[imageIndex] != ImageFormat.Unknown && m_ImageFormats[imageIndex] != imgFormat) {
-                Logger?.Error(LogCode.EmbedImageInconsistentType, m_ImageFormats[imageIndex].ToString(), imgFormat.ToString());
-            }
-
-            m_ImageFormats[imageIndex] = imgFormat;
-            if (m_ImageFormats[imageIndex] != ImageFormat.Jpeg && m_ImageFormats[imageIndex] != ImageFormat.PNG) {
-                // TODO: support embed KTX textures
-                Logger?.Error(LogCode.EmbedImageUnsupportedType, m_ImageFormats[imageIndex].ToString());
-            }
-
-            // TODO: Investigate alternative: native texture creation in worker thread
-            bool forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[imageIndex];
-            var txt = CreateEmptyTexture(img, imageIndex, forceSampleLinear);
-            txt.LoadImage(
-                data,
-#if UNITY_VISIONOS
-                false
+            switch (imageFormat)
+            {
+                case ImageFormat.Unknown:
+                    Logger?.Error(LogCode.EmbedImageLoadFailed);
+                    return false;
+                case ImageFormat.Jpeg:
+                case ImageFormat.PNG:
+#if UNITY_IMAGECONVERSION
+                {
+                    var texture = await LoadImageJpegOrPngFromDataUri(imageIndex, img, startIndex, byteLength);
+                    if (texture is not null)
+                    {
+                        m_Images[imageIndex] = texture;
+                        return true;
+                    }
+                    return false;
+                }
 #else
-                !m_Settings.TexturesReadable && !m_ImageReadable[imageIndex]
+                    Logger?.Warning(LogCode.ImageConversionNotEnabled);
+                    return true;
 #endif
-                );
-            m_Images[imageIndex] = txt;
+                case ImageFormat.Ktx:
+#if KTX_IS_ENABLED
+                {
+                    var texture = await LoadImageKtxFromDataUri(imageIndex, img, startIndex, byteLength);
+                    if (texture is not null)
+                    {
+                        m_Images[imageIndex] = texture;
+                        return true;
+                    }
+
+                    return false;
+                }
+#endif
+                default:
+                    Logger?.Error(LogCode.EmbedImageUnsupportedType, m_ImageFormats[imageIndex].ToString());
+                    return false;
+            }
+        }
+
+#if UNITY_IMAGECONVERSION
+        async Task<Texture2D> LoadImageJpegOrPngFromDataUri(int imageIndex, Image img, int startIndex, int byteLength)
+        {
+#if UNITY_6000_0_OR_NEWER
+            var data = await DecodeDataUriAsync(img.uri, startIndex, byteLength);
+            if (!data.IsCreated)
+            {
+                Logger?.Error(LogCode.EmbedImageLoadFailed);
+                return null;
+            }
+#else
+            var data = await DecodeDataUriToManagedArrayAsync(img.uri, startIndex, byteLength);
+            if (data == null)
+            {
+                Logger?.Error(LogCode.EmbedImageLoadFailed);
+                return null;
+            }
+#endif
+            await DeferAgent.BreakPoint();
+            Profiler.BeginSample("LoadImageJpegOrPngFromDataUri");
+            // TODO: Investigate alternative: native texture creation in worker thread
+            var forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[imageIndex];
+            var texture = CreateEmptyTexture(img, imageIndex, forceSampleLinear);
+            texture.LoadImage(
+#if UNITY_6000_0_OR_NEWER
+                data.AsReadOnlySpan(),
+#else
+                data,
+#endif
+                !LoadImageReadable(imageIndex)
+            );
             Profiler.EndSample();
+            return texture;
+        }
+#endif // UNITY_IMAGECONVERSION
+
+#if KTX_IS_ENABLED
+        async Task<Texture2D> LoadImageKtxFromDataUri(int imageIndex, Image img, int startIndex, int byteLength)
+        {
+            var data = await DecodeDataUriAsync(img.uri, startIndex, byteLength);
+            if (!data.IsCreated)
+            {
+                Logger?.Error(LogCode.EmbedImageLoadFailed);
+                return null;
+            }
+            await DeferAgent.BreakPoint();
+            var texture = await LoadImageKtx(imageIndex, img, data.AsReadOnly());
+            data.Dispose();
+            return texture;
+        }
+
+        async Task<Texture2D> LoadImageKtx(
+            int imageIndex,
+            Image img,
+            NativeArray<byte>.ReadOnly data)
+        {
+            Profiler.BeginSample("LoadImageKtx");
+
+            var forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[imageIndex];
+            var readable = LoadImageReadable(imageIndex);
+
+            Texture2D texture = null;
+
+            var ktxTexture = new KtxTexture();
+            var errorCode = ktxTexture.Open(data);
+            if (errorCode != ErrorCode.Success) {
+                Logger?.Error(LogCode.EmbedImageLoadFailed);
+                return null;
+            }
+            var result = await ktxTexture.LoadTexture2D(forceSampleLinear, readable);
+            ktxTexture.Dispose();
+            if (result.errorCode == ErrorCode.Success) {
+                texture = result.texture;
+                texture.name = GetImageName(img, imageIndex);
+            }
+            else {
+                Logger?.Error(LogCode.EmbedImageLoadFailed);
+            }
+
+            Profiler.EndSample();
+            return texture;
         }
 #endif
 
@@ -1688,6 +1795,7 @@ namespace GLTFast
             return true;
         }
 
+#if UNITY_IMAGECONVERSION
         async Task<bool> WaitForTextureDownloads()
         {
             foreach (var dl in m_TextureDownloadTasks)
@@ -1709,27 +1817,34 @@ namespace GLTFast
                     // on Render thread, which is occupied by Gfx.UploadTextureData for 19 ms for a 2k by 2k texture
                     if (LoadImageFromBytes(imageIndex))
                     {
-#if UNITY_IMAGECONVERSION
+                        Profiler.BeginSample("Texture2D.LoadImage");
                         var forceSampleLinear = m_ImageGamma!=null && !m_ImageGamma[imageIndex];
                         txt = CreateEmptyTexture(Root.Images[imageIndex], imageIndex, forceSampleLinear);
-                        // TODO: Investigate for NativeArray variant to avoid `www.data`
-                        txt.LoadImage(
-                            www.Data,
-#if UNITY_VISIONOS
-                            false
-#else
-                            !m_Settings.TexturesReadable && !m_ImageReadable[imageIndex]
-#endif
+                        var markNonReadable = !LoadImageReadable(imageIndex);
+#if UNITY_6000_0_OR_NEWER
+                        if(www is INativeDownload nativeDownload)
+                        {
+                            txt.LoadImage(
+                                nativeDownload.NativeData.AsReadOnlySpan(),
+                                markNonReadable
                             );
-#else
-                        Logger?.Warning(LogCode.ImageConversionNotEnabled);
-                        txt = null;
+                        }
+                        else
 #endif
+                        {
+                            txt.LoadImage(
+                                www.Data,
+                                markNonReadable
+                                );
+                        }
+                        Profiler.EndSample();
                     }
                     else
                     {
                         Assert.IsTrue(www is ITextureDownload);
+                        Profiler.BeginSample("ITextureDownload.Texture");
                         txt = ((ITextureDownload)www).Texture;
+                        Profiler.EndSample();
                         txt.name = GetImageName(Root.Images[imageIndex], imageIndex);
                     }
                     www.Dispose();
@@ -1745,7 +1860,7 @@ namespace GLTFast
             }
             return true;
         }
-
+#endif // UNITY_IMAGECONVERSION
 
 #if KTX_IS_ENABLED
         async Task<bool> WaitForKtxDownloads() {
@@ -1779,7 +1894,8 @@ namespace GLTFast
                 }
                 var ktxContext = new KtxLoadContext(imageIndex,data);
                 var forceSampleLinear = m_ImageGamma!=null && !m_ImageGamma[imageIndex];
-                var result = await ktxContext.LoadTexture2D(forceSampleLinear);
+                var readable = LoadImageReadable(imageIndex);
+                var result = await ktxContext.LoadTexture2D(forceSampleLinear, readable);
                 if (result.errorCode == ErrorCode.Success) {
                     m_Images[imageIndex] = result.texture;
                     if (!result.orientation.IsYFlipped())
@@ -1809,21 +1925,25 @@ namespace GLTFast
             Profiler.EndSample();
         }
 
-        async Task<Tuple<byte[], string>> DecodeEmbedBufferAsync(string encodedBytes, bool timeCritical = false)
+        async ValueTask<NativeArray<byte>> DecodeDataUriAsync(
+            string dataUri,
+            int startIndex,
+            int byteLength,
+            bool timeCritical = false
+            )
         {
-            var predictedTime = encodedBytes.Length / (float)k_Base64DecodeSpeed;
+            var predictedTime = dataUri.Length / (float)k_Base64DecodeSpeed;
 #if MEASURE_TIMINGS
             var stopWatch = new Stopwatch();
             stopWatch.Start();
 #elif GLTFAST_THREADS
             if (!timeCritical || DeferAgent.ShouldDefer(predictedTime))
             {
-                // TODO: Not sure if thread safe? Maybe create a dedicated Report for the thread and merge them afterwards?
-                return await Task.Run(() => DecodeEmbedBuffer(encodedBytes, Logger));
+                return await Task.Run(() => DecodeDataUri(dataUri, startIndex, byteLength));
             }
 #endif
             await DeferAgent.BreakPoint(predictedTime);
-            var decodedBuffer = DecodeEmbedBuffer(encodedBytes, Logger);
+            var result = DecodeDataUri(dataUri, startIndex, byteLength);
 #if MEASURE_TIMINGS
             stopWatch.Stop();
             var elapsedSeconds = stopWatch.ElapsedMilliseconds / 1000f;
@@ -1831,33 +1951,152 @@ namespace GLTFast
             if (Mathf.Abs(relativeDiff) > .2f) {
                 Debug.LogWarning($"Base 64 unexpected duration! diff: {relativeDiff:0.00}% predicted: {predictedTime} sec actual: {elapsedSeconds} sec");
             }
-            var throughput = encodedBytes.Length / elapsedSeconds;
-            Debug.Log($"Base 64 throughput: {throughput} bytes/sec ({encodedBytes.Length} bytes in {elapsedSeconds} seconds)");
+            var throughput = dataUri.Length / elapsedSeconds;
+            Debug.Log($"Base 64 throughput: {throughput} bytes/sec ({dataUri.Length} bytes in {elapsedSeconds} seconds)");
 #endif
-            return decodedBuffer;
+            return result;
         }
 
-        static Tuple<byte[], string> DecodeEmbedBuffer(string encodedBytes, ICodeLogger logger)
+#if !UNITY_6000_0_OR_NEWER
+        async ValueTask<byte[]> DecodeDataUriToManagedArrayAsync(
+            string dataUri,
+            int startIndex,
+            int byteLength,
+            bool timeCritical = false)
         {
-            Profiler.BeginSample("DecodeEmbedBuffer");
-            logger?.Warning(LogCode.EmbedSlow);
-            var mediaTypeEnd = encodedBytes.IndexOf(';', 5, Math.Min(encodedBytes.Length - 5, 1000));
+            var predictedTime = dataUri.Length / (float)k_Base64DecodeSpeed;
+#if GLTFAST_THREADS
+            if (!timeCritical || DeferAgent.ShouldDefer(predictedTime))
+            {
+                return await Task.Run(() => DecodeDataUriToManagedArray(dataUri, startIndex, byteLength));
+            }
+#endif
+            await DeferAgent.BreakPoint(predictedTime);
+            var result = DecodeDataUriToManagedArray(dataUri, startIndex, byteLength);
+            return result;
+        }
+#endif // !UNITY_6000_0_OR_NEWER
+
+        bool TryGetDataUriDescriptor(string dataUri, out ReadOnlySpan<char> mimeType, out int startIndex, out int byteLength)
+        {
+            Logger?.Warning(LogCode.EmbedSlow);
+            var mediaTypeEnd = dataUri.IndexOf(';', 5, Math.Min(dataUri.Length - 5, 1000));
             if (mediaTypeEnd < 0)
             {
                 Profiler.EndSample();
-                return null;
+                mimeType = null;
+                startIndex = 0;
+                byteLength = -1;
+                return false;
             }
-            var mimeType = encodedBytes.Substring(5, mediaTypeEnd - 5);
-            var tmp = encodedBytes.Substring(mediaTypeEnd + 1, 7);
-            if (tmp != "base64,")
+            mimeType = dataUri.AsSpan(5, mediaTypeEnd - 5);
+            if (!dataUri.AsSpan(mediaTypeEnd + 1, 7).SequenceEqual("base64,"))
             {
                 Profiler.EndSample();
-                return null;
+                startIndex = 0;
+                byteLength = -1;
+                return false;
             }
-            var data = Convert.FromBase64String(encodedBytes.Substring(mediaTypeEnd + 8));
-            Profiler.EndSample();
-            return new Tuple<byte[], string>(data, mimeType);
+            var padding = 0;
+            if (dataUri.Length > 0 && dataUri[^1] == '=')
+            {
+                padding = dataUri.Length > 1 && dataUri[^2] == '=' ? 2 : 1;
+            }
+
+            startIndex = mediaTypeEnd + 8;
+            byteLength = ((dataUri.Length - startIndex) * 3 + 3) / 4 - padding;
+            return true;
         }
+
+        bool TryGetBufferDataUriDescriptor(
+            int bufferIndex,
+            uint expectedLength,
+            string dataUri,
+            out int startIndex,
+            out int byteLength
+            )
+        {
+            if (TryGetDataUriDescriptor(dataUri, out var mimeType, out startIndex, out byteLength))
+            {
+                if (!mimeType.StartsWith("application/")
+                    || !(
+                        mimeType[12..].SequenceEqual("octet-stream")
+                        || mimeType[12..].SequenceEqual("gltf-buffer")
+                        )
+                    )
+                {
+                    Logger?.Error(
+                        LogCode.BufferDataUriUnexpectedMimeType,
+                        bufferIndex.ToString(),
+                        mimeType.ToString()
+                        );
+                    return false;
+                }
+
+                if (byteLength < expectedLength)
+                {
+                    Logger?.Error(
+                        LogCode.BufferContentUndersized,
+                        bufferIndex.ToString(),
+                        expectedLength.ToString(),
+                        byteLength.ToString()
+                    );
+                    return false;
+                }
+
+                return true;
+            }
+
+            Logger?.Error(LogCode.EmbedBufferLoadFailed);
+            return false;
+        }
+
+        bool TryGetImageDataUriDescriptor(
+            string dataUri,
+            out ImageFormat imageFormat,
+            out int startIndex,
+            out int byteLength
+            )
+        {
+            if (TryGetDataUriDescriptor(dataUri, out var mimeType, out startIndex, out byteLength))
+            {
+                imageFormat = ImageFormatExtensions.FromMimeType(mimeType);
+                return true;
+            }
+
+            imageFormat = ImageFormat.Unknown;
+            return false;
+        }
+
+        static NativeArray<byte> DecodeDataUri(string dataUri, int startIndex, int dataLength)
+        {
+            Profiler.BeginSample("DecodeDataUri");
+            var data = new NativeArray<byte>(dataLength, Allocator.Persistent);
+            if (!Convert.TryFromBase64Chars(dataUri.AsSpan(startIndex), data.AsSpan(), out var bytesWritten)
+               || bytesWritten != dataLength)
+            {
+                // Invalidate buffer to signal decoding failed.
+                data.Dispose();
+            }
+            Profiler.EndSample();
+            return data;
+        }
+
+#if !UNITY_6000_0_OR_NEWER
+        static byte[] DecodeDataUriToManagedArray(string dataUri, int startIndex, int dataLength)
+        {
+            Profiler.BeginSample("DecodeDataUriToManagedArray");
+            var data = new byte[dataLength];
+            if (!Convert.TryFromBase64Chars(dataUri.AsSpan(startIndex), data.AsSpan(), out var bytesWritten)
+                || bytesWritten != dataLength)
+            {
+                // Invalidate buffer to signal decoding failed.
+                data = null;
+            }
+            Profiler.EndSample();
+            return data;
+        }
+#endif // !UNITY_6000_0_OR_NEWER
 
         void LoadImage(int imageIndex, Uri url, bool nonReadable, bool isKtx)
         {
@@ -2227,11 +2466,7 @@ namespace GLTFast
                 {
                     Assert.AreEqual(m_Images.Length, Root.Images.Count);
                 }
-                m_ImageCreateContexts = new List<ImageCreateContext>();
-#if KTX_IS_ENABLED
-                await
-#endif
-                CreateTexturesFromBuffers(Root.Images, Root.BufferViews, m_ImageCreateContexts);
+                await CreateTexturesFromBuffers(Root.Images, Root.BufferViews);
             }
             await DeferAgent.BreakPoint();
 
@@ -2263,10 +2498,12 @@ namespace GLTFast
             }
 #endif // KTX_IS_ENABLED
 
+#if UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
             if (m_ImageCreateContexts != null)
             {
                 await WaitForImageCreateContexts();
             }
+#endif // UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
 
             if (m_Images != null && Root.Textures != null)
             {
@@ -2588,13 +2825,28 @@ namespace GLTFast
                     }
                     else
                     {
-                        var newImg = UnityEngine.Object.Instantiate(img);
-                        m_Resources.Add(newImg);
+                        Texture2D newImg;
+                        if (img.isReadable)
+                        {
+
+                            newImg = UnityEngine.Object.Instantiate(img);
+                            m_Resources.Add(newImg);
 #if DEBUG
-                        newImg.name = $"{img.name}_sampler{txt.sampler}";
-                        Logger?.Warning(LogCode.ImageMultipleSamplers,imageIndex.ToString());
+                            newImg.name = $"{img.name}_sampler{txt.sampler}";
+                            Logger?.Warning(LogCode.ImageMultipleSamplers,imageIndex.ToString());
 #endif
-                        sampler?.Apply(newImg, m_Settings.DefaultMinFilterMode, m_Settings.DefaultMagFilterMode);
+                            sampler?.Apply(newImg, m_Settings.DefaultMinFilterMode, m_Settings.DefaultMagFilterMode);
+                        }
+                        else
+                        {
+                            Logger?.Warning(
+                                LogCode.TextureSamplerNotApplied,
+                                txt.sampler >= 0 ? $"#{txt.sampler}" : "default",
+                                textureIndex.ToString(),
+                                imageIndex.ToString()
+                                );
+                            newImg = img;
+                        }
                         imageVariants[imageIndex][key] = newImg;
                         m_Textures[textureIndex] = newImg;
                     }
@@ -2602,6 +2854,7 @@ namespace GLTFast
             }
         }
 
+#if UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
         async Task WaitForImageCreateContexts()
         {
             var imageCreateContextsLeft = true;
@@ -2614,16 +2867,12 @@ namespace GLTFast
                     if (jh.jobHandle.IsCompleted)
                     {
                         jh.jobHandle.Complete();
-#if UNITY_IMAGECONVERSION
+                        Profiler.BeginSample("Texture2D.LoadImage");
                         m_Images[jh.imageIndex].LoadImage(
                             jh.buffer,
-#if UNITY_VISIONOS
-                                false
-#else
-                            !m_Settings.TexturesReadable && !m_ImageReadable[jh.imageIndex]
-#endif
+                            !LoadImageReadable(jh.imageIndex)
                         );
-#endif
+                        Profiler.EndSample();
                         jh.gcHandle.Free();
                         m_ImageCreateContexts.RemoveAt(i);
                         loadedAny = true;
@@ -2638,6 +2887,7 @@ namespace GLTFast
             }
             m_ImageCreateContexts = null;
         }
+#endif // UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
 
         void SetMaterialPointsSupport(int materialIndex)
         {
@@ -2776,10 +3026,15 @@ namespace GLTFast
                 m_DownloadTasks = null;
             }
 
-            m_TextureDownloadTasks = null;
-
             m_AccessorUsage = null;
+
+#if UNITY_IMAGECONVERSION
+            m_TextureDownloadTasks = null;
+#if !UNITY_6000_0_OR_NEWER
             m_ImageCreateContexts = null;
+#endif
+#endif
+
             m_Images = null;
             m_ImageFormats = null;
 #if !UNITY_VISIONOS
@@ -3110,17 +3365,14 @@ namespace GLTFast
             return result;
         }
 
-#if KTX_IS_ENABLED
-        async Task
-#else
-        void
-#endif
-        CreateTexturesFromBuffers(
+        async Task CreateTexturesFromBuffers(
             IReadOnlyList<Image> srcImages,
-            IReadOnlyList<BufferViewBase> bufferViews,
-            ICollection<ImageCreateContext> contexts
+            IReadOnlyList<BufferViewBase> bufferViews
         )
         {
+#if UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
+            m_ImageCreateContexts = new List<ImageCreateContext>();
+#endif
             for (int i = 0; i < m_Images.Length; i++)
             {
                 Profiler.BeginSample("CreateTexturesFromBuffers.ImageFormat");
@@ -3136,59 +3388,71 @@ namespace GLTFast
                         // Image is missing mime type
                         // try to determine type by file extension
                         ? UriHelper.GetImageFormatFromUri(img.uri)
-                        : GetImageFormatFromMimeType(img.mimeType);
+                        : ImageFormatExtensions.FromMimeType(img.mimeType);
                 }
                 Profiler.EndSample();
 
-                if (imgFormat != ImageFormat.Unknown)
+                if (imgFormat != ImageFormat.Unknown && img.bufferView >= 0)
                 {
-                    if (img.bufferView >= 0)
+                    if (imgFormat == ImageFormat.Ktx)
                     {
-
-                        if (imgFormat == ImageFormat.Ktx)
-                        {
 #if KTX_IS_ENABLED
-                            Profiler.BeginSample("CreateTexturesFromBuffers.KtxLoadNativeContext");
-                            if(m_KtxLoadContextsBuffer==null) {
-                                m_KtxLoadContextsBuffer = new List<KtxLoadContextBase>();
-                            }
-                            var ktxContext = new KtxLoadNativeContext(
-                                i,((IGltfBuffers)this).GetBufferView(img.bufferView, out _));
-                            m_KtxLoadContextsBuffer.Add(ktxContext);
-                            Profiler.EndSample();
-                            await DeferAgent.BreakPoint();
+                        Profiler.BeginSample("CreateTexturesFromBuffers.KtxLoadNativeContext");
+                        if(m_KtxLoadContextsBuffer==null) {
+                            m_KtxLoadContextsBuffer = new List<KtxLoadContextBase>();
+                        }
+                        var ktxContext = new KtxLoadContext(
+                            i, ((IGltfBuffers)this).GetBufferView(img.bufferView, out _).AsNativeArrayReadOnly());
+                        m_KtxLoadContextsBuffer.Add(ktxContext);
+                        Profiler.EndSample();
+                        await DeferAgent.BreakPoint();
 #else
-                            Logger?.Error(LogCode.PackageMissing, "KTX for Unity", ExtensionName.TextureBasisUniversal);
+                        Logger?.Error(LogCode.PackageMissing, "KTX for Unity", ExtensionName.TextureBasisUniversal);
 #endif // KTX_IS_ENABLED
-                        }
-                        else
-                        {
-                            Profiler.BeginSample("CreateTexturesFromBuffers.ExtractBuffer");
-                            var bufferView = bufferViews[img.bufferView];
-                            var buffer = GetBuffer(bufferView.buffer);
-                            var chunk = m_BinChunks[bufferView.buffer];
+                    }
+                    else
+                    {
+#if UNITY_IMAGECONVERSION
 
-                            bool forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[i];
-                            var txt = CreateEmptyTexture(img, i, forceSampleLinear);
-                            var icc = new ImageCreateContext();
-                            icc.imageIndex = i;
-                            icc.buffer = new byte[bufferView.byteLength];
-                            icc.gcHandle = GCHandle.Alloc(icc.buffer, GCHandleType.Pinned);
+                        var forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[i];
+                        var txt = CreateEmptyTexture(img, i, forceSampleLinear);
+#if UNITY_6000_0_OR_NEWER
+                        Profiler.BeginSample("Texture2D.LoadImage");
+                        var data = ((IGltfBuffers)this).GetBufferView(img.bufferView, out _);
+                        txt.LoadImage(data.AsNativeArrayReadOnly().AsReadOnlySpan(), !LoadImageReadable(i));
+                        Profiler.EndSample();
+                        await DeferAgent.BreakPoint();
+#else // UNITY_6000_0_OR_NEWER
+                        Profiler.BeginSample("CreateTexturesFromBuffers.ExtractBuffer");
+                        var bufferView = bufferViews[img.bufferView];
+                        var buffer = GetBuffer(bufferView.buffer);
+                        var chunk = m_BinChunks[bufferView.buffer];
 
-                            var job = CreateMemCopyJob(bufferView, buffer, chunk, icc);
-                            icc.jobHandle = job.Schedule();
+                        var icc = new ImageCreateContext();
+                        icc.imageIndex = i;
+                        icc.buffer = new byte[bufferView.byteLength];
+                        icc.gcHandle = GCHandle.Alloc(icc.buffer, GCHandleType.Pinned);
 
-                            contexts.Add(icc);
+                        var job = CreateMemCopyJob(bufferView, buffer, chunk, icc);
+                        icc.jobHandle = job.Schedule();
 
-                            m_Images[i] = txt;
-                            m_Resources.Add(txt);
-                            Profiler.EndSample();
-                        }
+                        m_ImageCreateContexts.Add(icc);
+                        Profiler.EndSample();
+#endif // UNITY_6000_0_OR_NEWER
+                        m_Images[i] = txt;
+                        m_Resources.Add(txt);
+#else // UNITY_IMAGECONVERSION
+                        Logger?.Warning(LogCode.ImageConversionNotEnabled);
+#endif // UNITY_IMAGECONVERSION
                     }
                 }
             }
+#if !(UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER) && !KTX_IS_ENABLED
+            await DeferAgent.BreakPoint();
+#endif
         }
 
+#if UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
         static unsafe MemCopyJob CreateMemCopyJob(
             BufferViewBase bufferView,
             ReadOnlyNativeArray<byte> nativeArray,
@@ -3208,14 +3472,11 @@ namespace GLTFast
 
             return job;
         }
+#endif // UNITY_IMAGECONVERSION && !UNITY_6000_0_OR_NEWER
 
         Texture2D CreateEmptyTexture(Image img, int index, bool forceSampleLinear)
         {
-#if UNITY_2022_1_OR_NEWER
             var textureCreationFlags = TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
-#else
-            var textureCreationFlags = TextureCreationFlags.None;
-#endif
             if (m_Settings.GenerateMipMaps)
             {
                 textureCreationFlags |= TextureCreationFlags.MipChain;
@@ -3237,6 +3498,17 @@ namespace GLTFast
         static string GetImageName(Image img, int index)
         {
             return string.IsNullOrEmpty(img.name) ? $"image_{index}" : img.name;
+        }
+
+        bool LoadImageReadable(int imageIndex)
+        {
+#if UNITY_VISIONOS
+            // PolySpatial visionOS needs to be able to access raw texture data in order to
+            // do the material/texture conversion.
+            return true;
+#else
+            return m_Settings.TexturesReadable || m_ImageReadable[imageIndex];
+#endif
         }
 
         static void SafeDestroy(UnityEngine.Object obj)
@@ -3284,27 +3556,16 @@ namespace GLTFast
                 meshAssignmentIndices[0] = 0;
             }
             var meshAssignmentCounter = 0;
-            var primitiveSingles = new Dictionary<MeshPrimitiveBase, MeshOrder>(s_MeshComparer);
             var primitiveSets = new Dictionary<IReadOnlyList<MeshPrimitiveBase>, MeshOrder>(s_MeshComparer);
             for (var meshIndex = 0; meshIndex < meshCount; meshIndex++)
             {
                 var mesh = Root.Meshes[meshIndex];
                 // TODO: Optimized path for single primitive meshes!
                 var clusteredPrimitives = new Dictionary<VertexBufferDescriptor, PrimitiveSet>();
-#if DRACO_IS_ENABLED
-                var singlePrimitives = new List<PrimitiveSingle>();
-#endif
+
                 for (var primIndex = 0; primIndex < mesh.Primitives.Count; primIndex++)
                 {
                     var primitive = mesh.Primitives[primIndex];
-#if DRACO_IS_ENABLED
-                    var isDraco = primitive.IsDracoCompressed;
-                    if (isDraco)
-                    {
-                        singlePrimitives.Add(new PrimitiveSingle(primIndex, primitive));
-                    }
-                    else
-#endif
                     {
                         var vertexBufferDesc = VertexBufferDescriptor.FromPrimitive(primitive);
                         if (!clusteredPrimitives.ContainsKey(vertexBufferDesc))
@@ -3318,7 +3579,7 @@ namespace GLTFast
                     {
                         AccessorUsage usage;
 #if DRACO_IS_ENABLED
-                        if (isDraco)
+                        if (primitive.IsDracoCompressed)
                         {
                             usage = AccessorUsage.Ignore;
                         }
@@ -3385,51 +3646,8 @@ namespace GLTFast
 
                     meshNumeration++;
                 }
-#if DRACO_IS_ENABLED
-                foreach (var primitiveSingle in singlePrimitives)
-                {
-#if DEBUG
-                    if (perPrimitiveSetIndices != null
-                        && CheckVertexBufferUsage(perPrimitiveSetIndices, primitiveSingle))
-                    {
-                        // Poor accessor sharing has been detected and logged.
-                        // Unset perPrimitiveSetIndices to prevent redundant logging.
-                        perPrimitiveSetIndices = null;
-                    }
-#endif
-                    int[] primIndexArray;
-                    if (primitiveSingles.TryGetValue(primitiveSingle.Primitive, out var meshOrder))
-                    {
-                        primitiveSingle.BuildAndDispose(out primIndexArray, out _);
-                        meshOrder.AddRecipient(new MeshSubset(meshIndex, meshNumeration, primIndexArray));
-                    }
-                    else
-                    {
-                        meshOrder = CreateMeshOrder(
-                            primitiveSingle,
-                            mesh,
-                            meshIndex,
-                            meshNumeration,
-                            out primIndexArray,
-                            out _
-                            );
-                        m_MeshOrders.Add(meshOrder);
-                    }
 
-                    MeshResultAssigned?.Invoke(
-                        meshNumeration,
-                        meshIndex,
-                        primIndexArray
-                    );
-
-                    meshNumeration++;
-                }
-
-#endif
                 meshAssignmentCounter += clusteredPrimitives.Count;
-#if DRACO_IS_ENABLED
-                meshAssignmentCounter += singlePrimitives.Count;
-#endif
                 meshAssignmentIndices[meshIndex + 1] = meshAssignmentCounter;
             }
 
@@ -3662,7 +3880,7 @@ namespace GLTFast
 #if DRACO_IS_ENABLED
             if (primitives[0].IsDracoCompressed)
             {
-                generator = new DracoMeshGenerator(primitives, subMeshes, morphTargetNames, mesh.name, this);
+                generator = new DracoMeshGenerator(primitives, morphTargetNames, mesh.name, this);
             }
             else
 #endif
@@ -4050,34 +4268,22 @@ namespace GLTFast
             }
         }
 
-        static ImageFormat GetImageFormatFromMimeType(string mimeType)
-        {
-            if (!mimeType.StartsWith("image/")) return ImageFormat.Unknown;
-            var sub = mimeType.Substring(6);
-            switch (sub)
-            {
-                case "jpeg":
-                    return ImageFormat.Jpeg;
-                case "png":
-                    return ImageFormat.PNG;
-                case "ktx":
-                case "ktx2":
-                    return ImageFormat.Ktx;
-                default:
-                    return ImageFormat.Unknown;
-            }
-        }
-
 #if KTX_IS_ENABLED
         struct KtxTranscodeTaskWrapper {
             public int index;
             public TextureResult result;
         }
 
-        static async Task<KtxTranscodeTaskWrapper> KtxLoadAndTranscode(int index, KtxLoadContextBase ktx, bool linear) {
+        static async Task<KtxTranscodeTaskWrapper> KtxLoadAndTranscode(
+            int index,
+            KtxLoadContextBase ktx,
+            bool linear,
+            bool readable
+            )
+        {
             return new KtxTranscodeTaskWrapper {
                 index = index,
-                result = await ktx.LoadTexture2D(linear)
+                result = await ktx.LoadTexture2D(linear, readable)
             };
         }
 
@@ -4092,7 +4298,8 @@ namespace GLTFast
                 while (ktxTasks.Count < maxCount && startedCount < totalCount) {
                     var ktx = m_KtxLoadContextsBuffer[startedCount];
                     var forceSampleLinear = m_ImageGamma != null && !m_ImageGamma[ktx.imageIndex];
-                    ktxTasks.Add(KtxLoadAndTranscode(startedCount, ktx, forceSampleLinear));
+                    var readable = LoadImageReadable(ktx.imageIndex);
+                    ktxTasks.Add(KtxLoadAndTranscode(startedCount, ktx, forceSampleLinear, readable));
                     startedCount++;
                     await DeferAgent.BreakPoint();
                 }

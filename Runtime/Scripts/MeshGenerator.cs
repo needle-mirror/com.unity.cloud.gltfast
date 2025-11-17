@@ -123,7 +123,7 @@ namespace GLTFast
                         var material = gltfImport.GetSourceMaterial(primitive.material);
                         if (material.RequiresTangents)
                         {
-                            mainBufferType |= MainBufferType.Tangent;
+                            mainBufferType |= MainBufferType.Normal | MainBufferType.Tangent;
                         }
                         else if (material.RequiresNormals)
                         {
@@ -298,6 +298,7 @@ namespace GLTFast
                 var morphTarget = primitive.targets[morphTargetIndex];
                 var success = m_MorphTargetsGenerator.AddMorphTarget(
                     vertexOffset,
+                    subMesh,
                     morphTargetIndex,
                     morphTarget
                 );

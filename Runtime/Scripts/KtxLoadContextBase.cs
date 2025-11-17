@@ -9,14 +9,22 @@
 
 using System.Threading.Tasks;
 using KtxUnity;
+using Unity.Collections;
 using UnityEngine;
 
 namespace GLTFast {
     abstract class KtxLoadContextBase {
-        public int imageIndex;
-        protected KtxTexture m_KtxTexture;
 
-        public abstract Task<TextureResult> LoadTexture2D(bool linear);
+        public readonly int imageIndex;
+        protected readonly NativeArray<byte>.ReadOnly m_Data;
+
+        protected KtxLoadContextBase(int imageIndex, NativeArray<byte>.ReadOnly data)
+        {
+            this.imageIndex = imageIndex;
+            m_Data = data;
+        }
+
+        public abstract Task<TextureResult> LoadTexture2D(bool linear, bool readable);
     }
 }
 #endif // KTX_IS_INSTALLED

@@ -1,9 +1,9 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.14.1",
+  "version": "6.15.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
-  "unity": "2021.3",
+  "unity": "2022.3",
   "keywords": [
     "mesh",
     "gltf",
@@ -25,17 +25,17 @@
   "relatedPackages": {
     "com.unity.cloud.gltfast.tests": "0.0.0"
   },
-  "unityRelease": "46f1",
+  "unityRelease": "67f2",
   "_upm": {
-    "changelog": "### Added\n\n### Changed\n- [TryGetAllUVAccessors](xref:GLTFast.Schema.Attributes.TryGetAllUVAccessors*) only returns the first 8, actually supported UV sets (and not the ninth anymore).\n\n### Fixed\n- Avoid crash when loading meshes with more than 8 texture coordinate sets by properly limiting them.\n\n### Removed\n\n### Deprecated\n\n### Security"
+    "changelog": "### Added\n- Loading KTX textures from data URIs.\n- (Test) OpenGltfScene: Shortcut Control+X clears the previously loaded glTF. Useful for testing resource deallocation.\n- (Test) Assets variants of *SubMesh* and *Rainbow Cuboid* for testing import of compressed/uncompressed multi-primitive meshes.\n- (Test) glTFs with different kinds of image formats and sources.\n- (Test) *No Normal* test asset.\n\n### Changed\n- *glTFast* will return a success value of `true` even if an image fails to load (which has not been consistent across the API before). This makes it easier to display assets despite of non-critical loading errors. Users who need stricter behavior can resort to monitoring for error logs (see the runtime import manual about logging or the `logger` parameter of [GltfImport constructor](xref:GLTFast.GltfImportBase.#ctor(GLTFast.Loading.IDownloadProvider,GLTFast.IDeferAgent,GLTFast.Materials.IMaterialGenerator,GLTFast.Logging.ICodeLogger))).\n- Primitives of a Draco compressed mesh will be decoded into in a single Unity mesh with multiple sub-meshes instead of multiple Unity meshes (thanks [Kibsgaard](https://github.com/Kibsgaard) for initiating this in [#33](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/33)).\n- [Draco for Unity] minimum required version was raised to 5.4.0.\n- (Performance) Texture data is not copied into managed memory before loading via [Texture2D.LoadImage](xref:UnityEngine.ImageConversion.LoadImage(UnityEngine.Texture2D,System.Byte[],System.Boolean)) (applies for Unity 6.0 or newer).\n- (Performance) Avoid copy of entire data URI string by using `ReadOnlySpan` instead sub-stringing.\n- (Performance) Base64-encoded data URIs are now decoded into [NativeArray&lt;byte&gt;](xref:Unity.Collections.NativeArray`1) instead of `byte[]`, reducing GC allocations.\n- [KTX for Unity] minimum required version was raised to 3.6.0.\n- Up-to-date versions of soft-dependencies [KTX for Unity] or [Draco for Unity] are enforced by raising a compiler error if an outdated version of either of those is installed.\n\n### Fixed\n- Corrected test cases for `GltfTestModels` importer tests.\n- Properly dispose GPU instancing buffers after Editor imports.\n- Multi-primitive, skinned meshes import properly to Unity meshes with multiple sub-meshes.\n- For Draco compressed meshes, it's now ensured that morph targets are retrieved to completion and resources are disposed properly.\n- Sampler settings conflicts result in a proper warning message if they cannot be resolved by instantiating the Texture2D (can occur on design-time imports).\n- Implicitly add normals to the vertex attribute layout if tangents are required (fixes [#41](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/41)).\n- Properly release native resources bound by morph targets jobs in context of decoding Draco compressed meshes.\n- Avoid pointless copying of glb-embedded textures if ImageConversion module is disabled anyways.\n- Avoid download of textures if ImageConversion module is disabled anyways.\n- Gracefully fail when buffer data URI has incorrect media-type field or undersized content length.\n- Just like PNG or Jpeg, KTX textures are now loaded readable as well if it's required by the import settings, the platform or for applying multiple sampler settings.\n- Properly abort if loading of a data URI encoded image failed.\n- Don't crash when a buffer failed to load when loading from `string`, `byte` arrays or `Stream`.\n- Return value of [GltfImport](xref:GLTFast.GltfImportBase) loading methods ([Load](xref:GLTFast.GltfImportBase.Load*), [LoadFile](xref:GLTFast.GltfImportBase.LoadFile*), [LoadGltfBinary](xref:GLTFast.GltfImportBase.LoadGltfBinary*), [LoadGltfBinary](xref:GLTFast.GltfImportBase.LoadGltfJson*) and [LoadStream](xref:GLTFast.GltfImportBase.LoadStream*)) has been made consistent.\n- (Documentation) various broken links fixed.\n\n### Removed\n- Broken consistency check between image data URI mediatype against image's mimeType."
   },
   "upmCi": {
-    "footprint": "f1dca1a5bbfd1447002159a43896dc135da00f8d"
+    "footprint": "c2194213563413534ddfcc372dc690b68c611bb5"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.14/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.15/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "20fc683570b1c3d52511255324b8c02f12e1524e"
+    "revision": "e7fa2d7c1196ab9979a1094039851d72acc83f5f"
   }
 }
