@@ -83,7 +83,12 @@
         {
             "name": "com.unity.meshopt.decompress",
             "expression": "",
-            "define": "MESHOPT"
+            "define": "MESHOPT_IS_INSTALLED"
+        },
+        {
+            "name": "com.unity.meshopt.decompress",
+            "expression": "0.2.0-exp.1",
+            "define": "MESHOPT_IS_RECENT"
         },
         {
             "name": "com.unity.shadergraph",

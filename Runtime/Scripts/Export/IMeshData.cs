@@ -23,7 +23,7 @@ namespace GLTFast.Export
         int GetIndexCount(int subMesh);
 
 #if ASYNC_MESH_DATA
-        Task<NativeArray<byte>> GetVertexData(int stream);
+        Task<NativeArray<byte>> GetVertexData(int stream, bool sync);
 #else
         NativeArray<byte> GetVertexData(int stream);
 #endif
@@ -32,7 +32,7 @@ namespace GLTFast.Export
     interface IMeshData<TIndex> : IMeshData where TIndex : unmanaged
     {
 #if ASYNC_MESH_DATA
-        Task<NativeArray<TIndex>> GetIndexData();
+        Task<NativeArray<TIndex>> GetIndexData(bool sync);
 #else
         NativeArray<TIndex> GetIndexData();
 #endif

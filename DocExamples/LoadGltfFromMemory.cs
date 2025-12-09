@@ -42,15 +42,16 @@ namespace GLTFast.Documentation.Examples
         }
         #endregion
 
-        void LoadViaComponent()
+        public void LoadViaComponent()
         {
             #region LoadViaComponent
             var gltf = gameObject.AddComponent<GltfAsset>();
             gltf.Url = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/Duck/glTF/Duck.gltf";
             #endregion
+            gltf.LoadOnStartup = false;
         }
 
-        async Task ImportSettings()
+        public static async Task ImportSettings(string filePath)
         {
             #region ImportSettings
             var gltf = new GltfImport();
@@ -63,7 +64,7 @@ namespace GLTFast.Documentation.Examples
                 NodeNameMethod = NameImportMethod.OriginalUnique
             };
             // Load the glTF and pass along the settings
-            var success = await gltf.Load("file:///path/to/file.gltf", settings);
+            var success = await gltf.Load(filePath, settings);
 
             if (success)
             {
@@ -77,12 +78,12 @@ namespace GLTFast.Documentation.Examples
             #endregion
         }
 
-        async Task Instantiation()
+        public async Task Instantiation()
         {
             #region Instantiation
             // First step: load glTF
             var gltf = new GLTFast.GltfImport();
-            var success = await gltf.Load("file:///path/to/file.gltf");
+            var success = await gltf.Load(filePath);
 
             if (success)
             {
@@ -111,16 +112,15 @@ namespace GLTFast.Documentation.Examples
         }
 
 #if UNITY_ANIMATION
-        async Task SceneInstanceAccess()
+        public async Task SceneInstanceAccess()
         {
             #region SceneInstanceAccess
             var gltfImport = new GltfImport();
-            await gltfImport.Load("test.gltf");
+            await gltfImport.Load(filePath);
             var instantiator = new GameObjectInstantiator(gltfImport, transform);
             var success = await gltfImport.InstantiateMainSceneAsync(instantiator);
             if (success)
             {
-
                 // Get the SceneInstance to access the instance's properties
                 var sceneInstance = instantiator.SceneInstance;
 
@@ -150,7 +150,7 @@ namespace GLTFast.Documentation.Examples
         }
 #endif // UNITY_ANIMATION
 
-        async Task CustomDeferAgent()
+        public async Task CustomDeferAgent()
         {
             var manyUrls = new[]
             {
@@ -158,9 +158,9 @@ namespace GLTFast.Documentation.Examples
             };
             #region CustomDeferAgent
             // Recommended: Use a common defer agent across multiple GltfImport instances!
-            // For a stable frame rate:
+            // TimeBudgetPerFrameDeferAgent for a stable frame rate:
             IDeferAgent deferAgent = gameObject.AddComponent<TimeBudgetPerFrameDeferAgent>();
-            // Or for faster loading:
+            // Or alternatively, UninterruptedDeferAgent for low latency loading:
             deferAgent = new UninterruptedDeferAgent();
 
             var tasks = new List<Task>();

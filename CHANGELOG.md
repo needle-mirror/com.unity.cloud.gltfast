@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.15.1] - 2025-12-09
+
+### Added
+- Assigned glTF logo to [GltfEntityAsset](xref:GLTFast.GltfEntityAsset) component.
+- (Test) Test glTF asset *CylinderWithMaterial* that's procedurally generated at runtime.
+- (Test) Tests for documentation examples.
+- (Test) `OpenGltfScene` improvements.
+  - Refactored to use custom load method.
+  - Load method option to choose between loading from file or URI.
+  - Scene index option.
+  - Informative console logs with file path/URI and load time.
+  - Now works at runtime as well (without file dialog).
+  - Re-positions camera so that the loaded glTF scene is framed.
+  - Can load via [EntityInstantiator](xref:GLTFast.EntityInstantiator).
+
+### Changed
+- (Entities) Entities of a scene are grouped via `LinkedEntityGroup`.
+- (Performance) Import mesh indices as unsigned integers and don't convert to signed integers anymore.
+- (Performance) Limited copy buffer size, so that garbage allocations do not scale with glTF-Binary content size anymore (when loading from file or `Stream`).
+- (Performance) Large glTF-Binary content is now loaded into memory in smaller chunks, which keeps the frame rate smooth (when loading from file or `Stream`).
+- (Performance) Shift loading glTF-Binary from stream to memory to a background thread, if it won't likely fit within the current update loop.
+- (Performance) glTF-Binary buffers are not initialized with zeros before population.
+- [meshoptimizer mesh compression for Unity] minimum required version was raised to 0.2.0-exp.1.
+- (Test) Updated tests dependency Graphics Test Framework (com.unity.testframework.graphics) to 8.13.1-exp.1.
+
+### Fixed
+- Returning a proper error for glTF-Binary with a content length shorter than what's depicted in the header.
+- NotSupportedException when loading a glTF-Binary file with excess length (fixes [#786](https://github.com/atteneder/glTFast/issues/786)).
+- (Documentation) Clarified how to add export shader variants.
+- (Test) Fixed generated test glTFs by exporting them in synchronous mode (only available internally).
+- (Importer) Synchronization Context is now properly reset after an exception (thanks [Bruno](https://github.com/bruno1308) for [#29](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/29)).
+- Removed compiler warning when `GLTFAST_SAFE` scripting define is active.
+- (Test) Stabilize tests by executing `LogAssert.Expect` before actual tests.
+- (Entities) Sub-meshes are rendered properly.
+- (Test) Tests destroy the glTF entities before disposing meshes/materials to avoid batch rendering errors.
+
 ## [6.15.0] - 2025-11-17
 
 ### Added
@@ -42,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Broken consistency check between image data URI mediatype against image's mimeType.
+- Support for obsolete Hybrid Renderer (com.unity.rendering.hybrid).
 
 ## [6.14.1] - 2025-09-30
 
@@ -145,7 +182,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [6.10.2] - 2025-02-03
 
 ### Added
-- (Importer) *Textures Readable* checkbox in the imnporter inspector (*Textures* section).
+- (Importer) *Textures Readable* checkbox in the importer inspector (*Textures* section).
 - (Export) Error message when attempting to export with unsupported meshopt compression.
 - (Tests) Runtime import performance tests.
 - (Tests) Procedurally generated glTFs for testing purpose.
@@ -368,7 +405,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All missing extensions are logged (not just the first one).
   - There's now a single message per missing package.
   - Depending on whether that extension is required the message's type is warning or error.
-  - Added explicit message when [*meshoptimizer decompression for Unity*][meshoptUnity] is missing.
+  - Added explicit message when [meshoptimizer mesh compression for Unity] is missing.
 
 ## [6.3.0] - 2024-03-27
 
@@ -1480,7 +1517,7 @@ This release contains multiple breaking changes. Please read the [upgrade guide]
 [Draco for Unity]: https://docs.unity3d.com/Packages/com.unity.cloud.draco@latest
 [DracoUnity]: https://github.com/atteneder/DracoUnity
 [PolySpatialVisionOS]: https://docs.unity3d.com/Packages/com.unity.polyspatial.visionos@latest/
-[meshoptUnity]: https://docs.unity3d.com/Packages/com.unity.meshopt.decompress@latest/
+[meshoptimizer mesh compression for Unity]: https://docs.unity3d.com/Packages/com.unity.meshopt.decompress@latest/
 [aurorahcx]: https://github.com/aurorahcx
 [Battlehub0x]: https://github.com/Battlehub0x
 [Bersaelor]: https://github.com/Bersaelor

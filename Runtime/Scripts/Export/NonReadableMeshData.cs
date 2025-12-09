@@ -42,7 +42,7 @@ namespace GLTFast.Export
 
 
 #if ASYNC_MESH_DATA
-        public async Task<NativeArray<TIndex>> GetIndexData()
+        public async Task<NativeArray<TIndex>> GetIndexData(bool sync)
 #else
         public NativeArray<TIndex> GetIndexData()
 #endif
@@ -51,12 +51,18 @@ namespace GLTFast.Export
             {
                 using var indexBuffer = m_Mesh.GetIndexBuffer();
                 m_IndexData = new NativeArray<TIndex>(indexBuffer.count, Allocator.Persistent);
+                AsyncGPUReadbackRequest request;
 #if ASYNC_MESH_DATA
-                var request = await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref m_IndexData, indexBuffer);
-#else
-                var request = AsyncGPUReadback.RequestIntoNativeArray(ref m_IndexData, indexBuffer);
-                request.WaitForCompletion();
+                if (!sync)
+                {
+                    request = await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref m_IndexData, indexBuffer);
+                }
+                else
 #endif
+                {
+                    request = AsyncGPUReadback.RequestIntoNativeArray(ref m_IndexData, indexBuffer);
+                    request.WaitForCompletion();
+                }
                 Assert.IsTrue(request.done);
                 Assert.IsFalse(request.hasError);
             }
@@ -64,7 +70,7 @@ namespace GLTFast.Export
         }
 
 #if ASYNC_MESH_DATA
-        public async Task<NativeArray<byte>> GetVertexData(int stream)
+        public async Task<NativeArray<byte>> GetVertexData(int stream, bool sync)
 #else
         public NativeArray<byte> GetVertexData(int stream)
 #endif
@@ -75,12 +81,18 @@ namespace GLTFast.Export
             {
                 using var vertexBuffer = m_Mesh.GetVertexBuffer(stream);
                 m_VertexData[stream] = new NativeArray<byte>(vertexBuffer.count * vertexBuffer.stride, Allocator.Persistent);
+                AsyncGPUReadbackRequest request;
 #if ASYNC_MESH_DATA
-                var request = await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref m_VertexData[stream], vertexBuffer);
-#else
-                var request = AsyncGPUReadback.RequestIntoNativeArray(ref m_VertexData[stream], vertexBuffer);
-                request.WaitForCompletion();
+                if (!sync)
+                {
+                    request = await AsyncGPUReadback.RequestIntoNativeArrayAsync(ref m_VertexData[stream], vertexBuffer);
+                }
+                else
 #endif
+                {
+                    request = AsyncGPUReadback.RequestIntoNativeArray(ref m_VertexData[stream], vertexBuffer);
+                    request.WaitForCompletion();
+                }
                 Assert.IsTrue(request.done);
                 Assert.IsFalse(request.hasError);
             }

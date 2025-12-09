@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-#if MESHOPT
+#if MESHOPT_IS_RECENT
 using System;
 using Meshoptimizer;
 

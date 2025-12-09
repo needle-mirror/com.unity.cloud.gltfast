@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System.Threading.Tasks;
-using UnityEngine.Serialization;
 
 namespace GLTFast.Documentation.Examples
 {
@@ -13,12 +12,9 @@ namespace GLTFast.Documentation.Examples
 
     class ExportSamples : MonoBehaviour
     {
+        public string destinationFilePath;
 
-        [FormerlySerializedAs("path")]
-        [SerializeField]
-        string destinationFilePath;
-
-        async Task AdvancedExport()
+        public async Task AdvancedExport()
         {
             #region AdvancedExport
 
@@ -82,7 +78,7 @@ namespace GLTFast.Documentation.Examples
             #endregion
         }
 
-        void ExportSettingsDraco()
+        public static ExportSettings ExportSettingsDraco()
         {
             #region ExportSettingsDraco
             // ExportSettings provides generic export settings
@@ -97,6 +93,7 @@ namespace GLTFast.Documentation.Examples
                 }
             };
             #endregion
+            return exportSettings;
         }
 
         async void Start()
@@ -104,7 +101,7 @@ namespace GLTFast.Documentation.Examples
             await LocalTransform();
         }
 
-        async Task LocalTransform()
+        public async Task LocalTransform()
         {
             #region LocalTransform
             var export = new GameObjectExport();

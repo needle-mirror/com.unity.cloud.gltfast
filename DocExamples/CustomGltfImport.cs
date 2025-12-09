@@ -1,30 +1,35 @@
 // SPDX-FileCopyrightText: 2023 Unity Technologies and the glTFast authors
 // SPDX-License-Identifier: Apache-2.0
 
-using GLTFast.Logging;
-
 #if NEWTONSOFT_JSON
 namespace GLTFast.Documentation.Examples
 {
 #region CustomGltfImport
-    using GLTFast;
-    using Addons;
     using System;
+    using System.Threading.Tasks;
+    using Addons;
+    using GLTFast;
+    using GLTFast.Logging;
     using UnityEngine;
     using GltfImport = GLTFast.Newtonsoft.GltfImport;
 
     class CustomGltfImport : MonoBehaviour
     {
         // Path to the gltf asset to be imported
-        public string Uri;
+        public string uri;
 
         async void Start()
+        {
+            await LoadGltf();
+        }
+
+        public async Task LoadGltf()
         {
             try
             {
                 ImportAddonRegistry.RegisterImportAddon(new MyAddon());
                 var gltfImport = new GltfImport(logger:new ConsoleLogger());
-                await gltfImport.Load(Uri);
+                await gltfImport.Load(uri);
                 await gltfImport.InstantiateMainSceneAsync(transform);
             }
             catch (Exception e)
@@ -33,8 +38,9 @@ namespace GLTFast.Documentation.Examples
             }
         }
 
-        public class MyAddon : ImportAddon<MyAddonInstance> { }
-        public class MyAddonInstance : ImportAddonInstance
+        class MyAddon : ImportAddon<MyAddonInstance> { }
+
+        class MyAddonInstance : ImportAddonInstance
         {
             GltfImport m_GltfImport;
 
@@ -55,7 +61,7 @@ namespace GLTFast.Documentation.Examples
                 var goInstantiator = instantiator as GameObjectInstantiator;
                 if (goInstantiator == null)
                     return;
-                var _ = new MyInstantiatorAddon(m_GltfImport, goInstantiator);
+                _ = new MyInstantiatorAddon(m_GltfImport, goInstantiator);
             }
 
             public override bool SupportsGltfExtension(string extensionName)
@@ -67,8 +73,8 @@ namespace GLTFast.Documentation.Examples
 
     class MyInstantiatorAddon
     {
-        GltfImport m_GltfImport;
-        GameObjectInstantiator m_Instantiator;
+        readonly GltfImport m_GltfImport;
+        readonly GameObjectInstantiator m_Instantiator;
 
         public MyInstantiatorAddon(GltfImport gltfImport, GameObjectInstantiator instantiator)
         {

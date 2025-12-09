@@ -121,14 +121,13 @@ namespace GLTFast
                 }.Schedule(m_Data.Length, GltfImport.DefaultBatchCount, dependsOn);
             }
 #if GLTFAST_SAFE
-            else {
-                // Re-normalizing alone is sufficient
-                return new RenormalizeBoneWeightsJob {
-                    bones = m_Data,
-                }.Schedule(m_Data.Length, GltfImport.DefaultBatchCount, dependsOn);
-            }
-#endif
+            // Re-normalizing alone is sufficient
+            return new RenormalizeBoneWeightsJob {
+                bones = m_Data,
+            }.Schedule(m_Data.Length, GltfImport.DefaultBatchCount, dependsOn);
+#else
             return dependsOn;
+#endif
         }
 
         public void AddDescriptors(VertexAttributeDescriptor[] dst, int offset, int stream)

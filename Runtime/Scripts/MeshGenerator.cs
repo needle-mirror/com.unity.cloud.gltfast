@@ -23,7 +23,7 @@ namespace GLTFast
     {
         VertexBufferGeneratorBase m_VertexData;
 
-        NativeArray<int>[] m_Indices;
+        NativeArray<uint>[] m_Indices;
         List<IDisposable> m_Disposables;
         readonly SubMeshAssignment[] m_SubMeshAssignments;
         readonly IReadOnlyList<MeshPrimitiveBase> m_Primitives;
@@ -189,7 +189,7 @@ namespace GLTFast
             if (!await m_VertexData.CreateVertexBuffer())
                 return null;
 
-            m_Indices = new NativeArray<int>[SubMeshCount];
+            m_Indices = new NativeArray<uint>[SubMeshCount];
 
             var tmpList = new List<JobHandle>(SubMeshCount);
             foreach (var subMesh in IterateSubMeshesIndexed())
@@ -207,7 +207,7 @@ namespace GLTFast
                     {
                         case DrawMode.LineLoop:
                         {
-                            m_Indices[subMeshIndex] = new NativeArray<int>(indices.Length + 1, Allocator.Persistent);
+                            m_Indices[subMeshIndex] = new NativeArray<uint>(indices.Length + 1, Allocator.Persistent);
 
                             // TODO: Allocate larger index buffer right away and only set last index here
                             // Wait for indices to be ready.
@@ -218,7 +218,7 @@ namespace GLTFast
 
                             getIndicesJob.Value.Complete();
 
-                            NativeArray<int>.Copy(indices, m_Indices[subMeshIndex], indices.Length);
+                            NativeArray<uint>.Copy(indices, m_Indices[subMeshIndex], indices.Length);
                             m_Indices[subMeshIndex][indices.Length] = indices[0];
                             indices.Dispose();
                             break;
@@ -227,7 +227,7 @@ namespace GLTFast
                         {
                             // TODO: Allocate larger index buffer right away and recalculate indices in-place.
                             var triangleStripTriangleCount = indices.Length - 2;
-                            m_Indices[subMeshIndex] = new NativeArray<int>(triangleStripTriangleCount * 3, Allocator.Persistent);
+                            m_Indices[subMeshIndex] = new NativeArray<uint>(triangleStripTriangleCount * 3, Allocator.Persistent);
                             var triangleStripJob = new RecalculateIndicesForTriangleStripJob
                             {
                                 input = indices,
@@ -247,7 +247,7 @@ namespace GLTFast
                         {
                             // TODO: Allocate larger index buffer right away and recalculate indices in-place.
                             var triangleFanTriangleCount = indices.Length - 2;
-                            m_Indices[subMeshIndex] = new NativeArray<int>(triangleFanTriangleCount * 3, Allocator.Persistent);
+                            m_Indices[subMeshIndex] = new NativeArray<uint>(triangleFanTriangleCount * 3, Allocator.Persistent);
                             var triangleFanJob = new RecalculateIndicesForTriangleFanJob
                             {
                                 input = indices,
@@ -479,7 +479,7 @@ namespace GLTFast
         static void GetIndicesJob(
             GltfImportBase gltfImport,
             int accessorIndex,
-            out NativeArray<int> indices,
+            out NativeArray<uint> indices,
             out JobHandle? jobHandle,
             bool flip
             )
@@ -494,7 +494,7 @@ namespace GLTFast
                 );
 
             Profiler.BeginSample("Alloc");
-            indices = new NativeArray<int>(accessor.count, Allocator.Persistent);
+            indices = new NativeArray<uint>(accessor.count, Allocator.Persistent);
             Profiler.EndSample();
 
             Assert.AreEqual(accessor.GetAttributeType(), GltfAccessorAttributeType.SCALAR);
@@ -519,7 +519,7 @@ namespace GLTFast
                     }
                     else
                     {
-                        var job8 = new ConvertIndicesUInt8ToInt32Job
+                        var job8 = new ConvertIndicesUInt8ToUInt32Job
                         {
                             input = accessorData.AsNativeArrayReadOnly(),
                             result = indices
@@ -541,7 +541,7 @@ namespace GLTFast
                     }
                     else
                     {
-                        var job16 = new ConvertIndicesUInt16ToInt32Job
+                        var job16 = new ConvertIndicesUInt16ToUInt32Job
                         {
                             input = accessorData.Reinterpret<ushort>().AsNativeArrayReadOnly(),
                             result = indices
@@ -563,12 +563,17 @@ namespace GLTFast
                     }
                     else
                     {
-                        var job32 = new ConvertIndicesUInt32ToInt32Job
+                        unsafe
                         {
-                            input = accessorData.Reinterpret<uint>().AsNativeArrayReadOnly(),
-                            result = indices
-                        };
-                        jobHandle = job32.Schedule(accessor.count, GltfImportBase.DefaultBatchCount);
+                            Assert.AreEqual(accessor.count * UnsafeUtility.SizeOf<uint>(), accessorData.Length);
+                            var job = new MemCopyJob
+                            {
+                                bufferSize = accessorData.Length,
+                                input = (byte*)accessorData.GetUnsafeReadOnlyPtr(),
+                                result = (byte*)indices.GetUnsafePtr()
+                            };
+                            jobHandle = job.Schedule();
+                        }
                     }
                     break;
                 }
@@ -584,7 +589,7 @@ namespace GLTFast
         static void CalculateIndicesJob(
             MeshPrimitiveBase primitive,
             int vertexCount,
-            out NativeArray<int> indices,
+            out NativeArray<uint> indices,
             out JobHandle jobHandle
             )
         {
@@ -595,10 +600,10 @@ namespace GLTFast
                 case DrawMode.LineLoop:
                 {
                     // extra index (first vertex again) for closing line loop
-                    indices = new NativeArray<int>(vertexCount + 1, Allocator.Persistent);
+                    indices = new NativeArray<uint>(vertexCount + 1, Allocator.Persistent);
                     // Set the last index to the first vertex
                     indices[vertexCount] = 0;
-                    var job = new CreateIndicesInt32Job()
+                    var job = new CreateIndicesUInt32Job()
                     {
                         result = indices
                     };
@@ -607,8 +612,8 @@ namespace GLTFast
                 }
                 case DrawMode.Triangles:
                 {
-                    indices = new NativeArray<int>(vertexCount, Allocator.Persistent);
-                    var job = new CreateIndicesInt32FlippedJob
+                    indices = new NativeArray<uint>(vertexCount, Allocator.Persistent);
+                    var job = new CreateIndicesUInt32FlippedJob
                     {
                         result = indices
                     };
@@ -617,7 +622,7 @@ namespace GLTFast
                 }
                 case DrawMode.TriangleStrip:
                 {
-                    indices = new NativeArray<int>((vertexCount - 2) * 3, Allocator.Persistent);
+                    indices = new NativeArray<uint>((vertexCount - 2) * 3, Allocator.Persistent);
                     var job = new CreateIndicesForTriangleStripJob
                     {
                         result = indices
@@ -626,7 +631,7 @@ namespace GLTFast
                     break;
                 }
                 case DrawMode.TriangleFan:
-                    indices = new NativeArray<int>((vertexCount - 2) * 3, Allocator.Persistent);
+                    indices = new NativeArray<uint>((vertexCount - 2) * 3, Allocator.Persistent);
                     var triangleFanJob = new CreateIndicesForTriangleFanJob
                     {
                         result = indices
@@ -635,8 +640,8 @@ namespace GLTFast
                     break;
                 default:
                 {
-                    indices = new NativeArray<int>(vertexCount, Allocator.Persistent);
-                    var job = new CreateIndicesInt32Job()
+                    indices = new NativeArray<uint>(vertexCount, Allocator.Persistent);
+                    var job = new CreateIndicesUInt32Job()
                     {
                         result = indices
                     };

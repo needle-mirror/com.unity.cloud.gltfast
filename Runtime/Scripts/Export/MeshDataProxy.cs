@@ -36,12 +36,12 @@ namespace GLTFast.Export
         }
 
 #if ASYNC_MESH_DATA
-        public Task<NativeArray<TIndex>> GetIndexData()
+        public Task<NativeArray<TIndex>> GetIndexData(bool sync)
         {
             return Task.FromResult(m_MeshData.GetIndexData<TIndex>());
         }
 
-        public Task<NativeArray<byte>> GetVertexData(int stream)
+        public Task<NativeArray<byte>> GetVertexData(int stream, bool sync)
         {
             return Task.FromResult(m_MeshData.GetVertexData<byte>(stream));
         }

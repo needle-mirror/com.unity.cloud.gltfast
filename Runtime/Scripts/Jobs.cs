@@ -296,26 +296,26 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct CreateIndicesInt32Job : IJobParallelFor
+    struct CreateIndicesUInt32Job : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
-            result[index] = index;
+            result[index] = (uint)index;
         }
     }
 
     [BurstCompile]
-    struct CreateIndicesInt32FlippedJob : IJobParallelFor
+    struct CreateIndicesUInt32FlippedJob : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
-            result[index] = index - 2 * (index % 3 - 1);
+            result[index] = (uint)(index - 2 * (index % 3 - 1));
         }
     }
 
@@ -323,7 +323,7 @@ namespace GLTFast.Jobs
     struct CreateIndicesForTriangleStripJob : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
@@ -336,9 +336,9 @@ namespace GLTFast.Jobs
             var triangleIndex = index / 3;
             result[index] = (index % 3) switch
             {
-                0 => triangleIndex + (1 + triangleIndex % 2),
-                1 => triangleIndex,
-                2 => triangleIndex + (2 - triangleIndex % 2),
+                0 => (uint)(triangleIndex + (1 + triangleIndex % 2)),
+                1 => (uint)(triangleIndex),
+                2 => (uint)(triangleIndex + (2 - triangleIndex % 2)),
                 _ => result[index]
             };
         }
@@ -348,7 +348,7 @@ namespace GLTFast.Jobs
     struct CreateIndicesForTriangleFanJob : IJobParallelFor
     {
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
@@ -361,8 +361,8 @@ namespace GLTFast.Jobs
             var triangleIndex = index / 3;
             result[index] = (index % 3) switch
             {
-                0 => triangleIndex + 2,
-                1 => triangleIndex + 1,
+                0 => (uint)(triangleIndex + 2),
+                1 => (uint)(triangleIndex + 1),
                 _ => 0
             };
         }
@@ -372,10 +372,10 @@ namespace GLTFast.Jobs
     struct RecalculateIndicesForTriangleStripJob : IJobParallelFor
     {
         [ReadOnly]
-        public NativeArray<int> input;
+        public NativeArray<uint> input;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
@@ -396,10 +396,10 @@ namespace GLTFast.Jobs
     struct RecalculateIndicesForTriangleFanJob : IJobParallelFor
     {
         [ReadOnly]
-        public NativeArray<int> input;
+        public NativeArray<uint> input;
 
         [WriteOnly, NativeDisableParallelForRestriction]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
@@ -417,13 +417,13 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct ConvertIndicesUInt8ToInt32Job : IJobParallelFor
+    struct ConvertIndicesUInt8ToUInt32Job : IJobParallelFor
     {
         [ReadOnly]
         public NativeArray<byte>.ReadOnly input;
 
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
@@ -462,32 +462,17 @@ namespace GLTFast.Jobs
     }
 
     [BurstCompile]
-    struct ConvertIndicesUInt16ToInt32Job : IJobParallelFor
+    struct ConvertIndicesUInt16ToUInt32Job : IJobParallelFor
     {
         [ReadOnly]
         public NativeArray<ushort>.ReadOnly input;
 
         [WriteOnly]
-        public NativeArray<int> result;
+        public NativeArray<uint> result;
 
         public void Execute(int index)
         {
             result[index] = input[index];
-        }
-    }
-
-    [BurstCompile]
-    struct ConvertIndicesUInt32ToInt32Job : IJobParallelFor
-    {
-        [ReadOnly]
-        public NativeArray<uint>.ReadOnly input;
-
-        [WriteOnly]
-        public NativeArray<int> result;
-
-        public void Execute(int index)
-        {
-            result[index] = (int)input[index];
         }
     }
 

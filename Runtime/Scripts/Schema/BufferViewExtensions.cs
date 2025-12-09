@@ -12,7 +12,7 @@ namespace GLTFast.Schema
     [Serializable]
     public class BufferViewExtensions
     {
-#if MESHOPT
+#if MESHOPT_IS_RECENT
         // ReSharper disable InconsistentNaming
         public BufferViewMeshoptExtension EXT_meshopt_compression;
         // ReSharper restore InconsistentNaming

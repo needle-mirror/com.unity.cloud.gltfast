@@ -255,6 +255,8 @@ namespace GLTFast.Logging
         BufferDataUriUnexpectedMimeType,
         /// <summary>Buffer's actual length is smaller than what its byteLength property suggests.</summary>
         BufferContentUndersized,
+        /// <summary>glTF-Binary's actual length is smaller than what the header's length field declares.</summary>
+        UnexpectedEndOfContent,
     }
 
     /// <summary>
@@ -291,6 +293,7 @@ See details in corresponding issue at https://github.com/atteneder/glTFast/issue
             { LogCode.ExtensionUnsupported, "glTF extension {0} is not supported" },
             { LogCode.ExportImageFailed, "Export image failed" },
             { LogCode.GltfNotBinary, "Not a glTF-binary file" },
+            { LogCode.UnexpectedEndOfContent, "Unexpected end of content" },
             { LogCode.GltfUnsupportedVersion, "Unsupported glTF version {0}" },
             { LogCode.HierarchyInvalid, "Invalid hierarchy" },
             { LogCode.ImageConversionNotEnabled, $"Jpeg/PNG textures failed because required built-in packages \"Image Conversion\"/\"Unity Web Request Texture\" are not enabled. {k_LinkProjectSetupTextureSupport}" },
