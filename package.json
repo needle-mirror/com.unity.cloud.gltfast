@@ -1,6 +1,6 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.17.0",
+  "version": "6.18.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
   "unity": "2022.3",
@@ -27,15 +27,15 @@
   },
   "unityRelease": "67f2",
   "_upm": {
-    "changelog": "### Added\n- Texture loading is fully customizable via Add-Ons.\n  - Inject support for glTF texture extensions (see [ITextureImageLoader](xref:GLTFast.ITextureImageLoader)).\n  - Customize PNG and Jpeg loading (see [IDefaultImageFormatLoader](xref:GLTFast.IDefaultImageFormatLoader)).\n  - See *ImageAddonTest* scene in the tests package which use the *AddOnsImage* samples from the `DocExamples` directory.\n- Explicit error message when unsupported image format WebP is detected ([LogCode.ImageFormatUnsupported](xref:GLTFast.Logging.LogCode.ImageFormatUnsupported)).\n- [ImageResult](xref:GLTFast.ImageResult) which depicts an imported glTF image.\n- (Test) TextureVariants test glTFs with WebP image format.\n- [Extension.TextureWebP](xref:GLTFast.Extension.TextureWebP) (no general WebP support, just for handling WebP cases).\n\n### Changed\n- (Add-Ons) GltfImport now accepts multiple import add-on instances of the same type.\n  - [GetImportAddonInstance](xref:GLTFast.GltfImportBase.GetImportAddonInstance*) returns the first instance that matches the type.\n- Ensured compatibility with [Fast Enter Play Mode](https://unity.com/blog/engine-platform/enter-play-mode-faster-in-unity-2019-3).\n- Image type detection is based on content (instead of mime-type depicted in glTF JSON, data URI mediatype or file extension).\n- Improved error message when image format is detected, but not supported (e.g. WebP).\n\n### Fixed\n- (Import) [AnisotropicFilterLevel setting](xref:GLTFast.ImportSettings.AnisotropicFilterLevel) is applied to KTX textures as well.\n- (Import) Leak of textures in case of loading errors.\n- (Export) Meshes with zero vertices or indices will now be skipped and an error will be logged instead of an exception being thrown (fixes [#806](https://github.com/atteneder/glTFast/issues/806))."
+    "changelog": "### Added\n- (Add-Ons) [IPostJsonDeserialization](xref:GLTFast.Addons.IPostJsonDeserialization) for intercepting the loading process right after glTF JSON deserialization.\n- (Test) Model *SubMeshIncompatible*, which features animated morph targets and primitives of incompatible vertex buffer structures.\n\n### Fixed\n- (Shader) Back-face normals are now correctly flipped in URP (fixes [#38](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/38)).\n- (Import) Textures are named after the corresponding glTF image again to ensure consistency with previous imports (reverts a change introduced in 6.17.0).\n- (Import) Log error instead of throwing exception when failing to download a texture with a relative URI when a base URI is not provided."
   },
   "upmCi": {
-    "footprint": "30c804c8662f518d0cfb29fa89505b2149122ad5"
+    "footprint": "b315ab1e81756b6158d1caee80a35a693729015e"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.17/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.18/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "976627aab3c7ea199d850b69bb5c569b2a3b3011"
+    "revision": "46caac08f2a6cf54326c7d57b9ce385f6665c4bc"
   }
 }
