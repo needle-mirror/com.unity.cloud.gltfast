@@ -1,9 +1,9 @@
 {
   "name": "com.unity.cloud.gltfast",
-  "version": "6.18.0",
+  "version": "6.19.0",
   "displayName": "Unity glTFast",
   "description": "Use glTFast to import and export glTF 3D files efficiently at runtime or in the Editor",
-  "unity": "2022.3",
+  "unity": "6000.0",
   "keywords": [
     "mesh",
     "gltf",
@@ -18,24 +18,23 @@
   "dependencies": {
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.unitywebrequest": "1.0.0",
-    "com.unity.mathematics": "1.2.6",
-    "com.unity.burst": "1.8.24",
-    "com.unity.collections": "1.2.4"
+    "com.unity.mathematics": "1.3.3",
+    "com.unity.burst": "1.8.29",
+    "com.unity.collections": "2.6.6"
   },
   "relatedPackages": {
     "com.unity.cloud.gltfast.tests": "0.0.0"
   },
-  "unityRelease": "67f2",
   "_upm": {
-    "changelog": "### Added\n- (Add-Ons) [IPostJsonDeserialization](xref:GLTFast.Addons.IPostJsonDeserialization) for intercepting the loading process right after glTF JSON deserialization.\n- (Test) Model *SubMeshIncompatible*, which features animated morph targets and primitives of incompatible vertex buffer structures.\n\n### Fixed\n- (Shader) Back-face normals are now correctly flipped in URP (fixes [#38](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/38)).\n- (Import) Textures are named after the corresponding glTF image again to ensure consistency with previous imports (reverts a change introduced in 6.17.0).\n- (Import) Log error instead of throwing exception when failing to download a texture with a relative URI when a base URI is not provided."
+    "changelog": "### Added\n- (Add-Ons) Import glTF animations to custom animation systems.\n  - [IAnimationProcessor](xref:GLTFast.Animations.IAnimationProcessor) &mdash; animation clips conversion\n  - [IAnimationProcessorFactory](xref:GLTFast.Animations.IAnimationProcessorFactory) &mdash; add-ons need to implement this\n- (Add-Ons) Lifetime management of converted glTF data and application during scene instantiation. Is used for custom animation import only for now.\n  - [IDataInstanceApplierFactory](xref:GLTFast.Addons.IDataInstanceApplierFactory) &mdash; owns converted data and forwards it to scene instantiation\n    - [IDataCache](xref:GLTFast.Addons.IDataCache)\n    - [IInstanceApplierFactory](xref:GLTFast.Addons.IInstanceApplierFactory)\n  - [IInstanceApplier](xref:GLTFast.Addons.IInstanceApplier) &mdash; applies data on scene instance\n- [IGltfAccessors](xref:GLTFast.IGltfAccessors) provides read-only access to typed glTF accessor data.\n- [INodeHierarchyInfo](xref:GLTFast.INodeHierarchyInfo) provides glTF node hierarchy information.\n- (Test) Inspector materials variant selection for `OpenGltfDialog`.\n- Instructions/guidelines for coding agents (`AGENTS.md`/`CLAUDE.md`)\n\n### Changed\n- Increased minimum required Unity version to 6.0 LTS.\n- Bumped dependency versions\n  - com.unity.burst to 1.8.29\n  - com.unity.collections to 2.6.6\n  - com.unity.mathematics to 1.3.3\n- GameObjectSceneInstance's [AddCamera](xref:GLTFast.GameObjectSceneInstance.AddCamera), [AddLight](xref:GLTFast.GameObjectSceneInstance.AddLight) and [SetLegacyAnimation](xref:GLTFast.GameObjectSceneInstance.SetLegacyAnimation) are now public, so custom [IInstantiators](xref:GLTFast.IInstantiator) can utilize it.\n- Refactored [ImportAddonInstanceCollection](xref:GLTFast.Addons.ImportAddonInstanceCollection) to derive directly from `List`/[QueryableList](xref:GLTFast.Addons.QueryableList).\n- (Performance) Importing animation curves got much faster and requires less managed memory. Keyframes are prepared in native arrays and set en bloc via [SetKeys(ReadOnlySpan&lt;Keyframe&gt;)](xref:UnityEngine.AnimationCurve.SetKeys(System.ReadOnlySpan`1<UnityEngine.Keyframe>)) instead of being slowly added individually (thanks [jverral](https://github.com/jverral) for initiating this via [#44](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/44)).\n- (Performance) Reduced memory waste by using cached, static identifiers instead of inner-loop format strings for [AnimationClip.SetCurve](xref:UnityEngine.AnimationClip.SetCurve(System.String,System.Type,System.String,UnityEngine.AnimationCurve))'s `propertyName` parameter (thanks [jverral](https://github.com/jverral) for [#44](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/44)).\n- Enabled Render Graph in graphics settings by default on all projects (not using compatibility mode anymore).\n  - (Test) Compatibility mode is still enabled for Unity 6.0 tests.\n\n### Fixed\n- Improved comma placement in export summary (thanks anonymous for [#46](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/46)).\n- [Materials variants](xref:GLTFast.MaterialsVariantsComponent)' inspector shows correct variant when regaining focus (thanks [anonymous2585](https://github.com/anonymous2585) for [#48](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/48)).\n- (Import) Fixed merging of mesh primitives with shared vertex buffer, but different indices type."
   },
   "upmCi": {
-    "footprint": "b315ab1e81756b6158d1caee80a35a693729015e"
+    "footprint": "faae5fd502a2adde84b04aedd4ea9b03e1d929a6"
   },
-  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.18/manual/index.html",
+  "documentationUrl": "https://docs.unity3d.com/Packages/com.unity.cloud.gltfast@6.19/manual/index.html",
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.cloud.gltfast.src.git",
     "type": "git",
-    "revision": "46caac08f2a6cf54326c7d57b9ce385f6665c4bc"
+    "revision": "dad239e9887c013860433cdb925780b6bd3cd99d"
   }
 }
