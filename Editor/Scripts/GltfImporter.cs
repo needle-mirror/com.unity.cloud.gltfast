@@ -28,6 +28,7 @@ using UnityEditor;
 using UnityEditor.AssetImporters;
 using UnityEngine;
 using UnityEngine.Rendering;
+using AsyncHelpers = GLTFast.Utils.AsyncHelpers;
 using Object = UnityEngine.Object;
 
 namespace GLTFast.Editor
@@ -371,6 +372,12 @@ namespace GLTFast.Editor
 
                 var variantsControl = instantiator.SceneInstance.MaterialsVariantsControl;
                 AsyncHelpers.RunSync(() => variantsControl.ApplyMaterialsVariantAsync(materialsVariantIndex.Value));
+            }
+
+            if (sceneTransform != go.transform)
+            {
+                sceneTransform.SetParent(null, false);
+                Object.DestroyImmediate(go);
             }
             AddObjectToAsset(ctx, $"scenes/{sceneObjectName}", sceneGo);
             if (sceneIndex == m_Gltf.DefaultSceneIndex && !materialsVariantIndex.HasValue)

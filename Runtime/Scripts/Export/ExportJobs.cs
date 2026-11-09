@@ -267,6 +267,7 @@ namespace GLTFast.Export
 
             public uint inputByteStride;
             public uint outputByteStride;
+            public int inputDimension;
 
             [ReadOnly]
             [NativeDisableUnsafePtrRestriction]
@@ -278,10 +279,15 @@ namespace GLTFast.Export
 
             public void Execute(int i)
             {
-                var inPtr = (float4*)(input + i * inputByteStride);
+                var inPtr = (float*)(input + i * inputByteStride);
                 var outPtr = (float4*)(output + i * outputByteStride);
 
-                *outPtr = *inPtr;
+                var weights = float4.zero;
+                for (var c = 0; c < inputDimension; c++)
+                {
+                    weights[c] = inPtr[c];
+                }
+                *outPtr = weights;
             }
         }
 
@@ -324,8 +330,8 @@ namespace GLTFast.Export
             }
 
             public uint inputByteStride;
-            public int indicesOffset;
             public uint outputByteStride;
+            public int inputDimension;
 
             [ReadOnly]
             [NativeDisableUnsafePtrRestriction]
@@ -337,13 +343,15 @@ namespace GLTFast.Export
 
             public void Execute(int i)
             {
-                var inputIndexPtr = (uint4*)(indicesOffset + input + i * inputByteStride);
-                var outIndexPtr = (ushort4*)(indicesOffset + output + i * outputByteStride);
+                var inPtr = (uint*)(input + i * inputByteStride);
+                var outPtr = (ushort4*)(output + i * outputByteStride);
 
-                // Set the correct values for the indices
-                var tmpIndex = *inputIndexPtr;
-                var tmpOut = new ushort4(tmpIndex[0], tmpIndex[1], tmpIndex[2], tmpIndex[3]);
-                *outIndexPtr = tmpOut;
+                var indices = uint4.zero;
+                for (var c = 0; c < inputDimension; c++)
+                {
+                    indices[c] = inPtr[c];
+                }
+                *outPtr = new ushort4(indices.x, indices.y, indices.z, indices.w);
             }
         }
 

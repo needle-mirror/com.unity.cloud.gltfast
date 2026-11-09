@@ -26,6 +26,9 @@ namespace GLTFast
 
         protected string m_MeshName;
 
+        bool m_ResultClaimed;
+        bool m_Disposed;
+
         protected MeshGeneratorBase(string meshName)
         {
             m_MeshName = meshName;
@@ -39,11 +42,18 @@ namespace GLTFast
                 await Task.Yield();
             }
 
+            m_ResultClaimed = true;
             return m_CreationTask?.Result;
         }
 
         public void Dispose()
         {
+            if (m_Disposed)
+            {
+                return;
+            }
+
+            m_Disposed = true;
             Dispose(true);
             GC.SuppressFinalize(this);
         }
@@ -52,7 +62,13 @@ namespace GLTFast
         {
             if (disposing)
             {
+                if (!m_ResultClaimed && m_CreationTask?.Status == TaskStatus.RanToCompletion)
+                {
+                    DestroyUtils.SafeDestroy(m_CreationTask.Result);
+                }
+
                 m_CreationTask?.Dispose();
+                m_MorphTargetsGenerator?.Dispose();
             }
         }
     }

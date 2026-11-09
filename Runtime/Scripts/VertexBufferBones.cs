@@ -34,15 +34,36 @@ namespace GLTFast
             int weightsAccessorIndex,
             int jointsAccessorIndex,
             int offset,
+            int vertexCount,
             IGltfBuffers buffers
         )
         {
             Profiler.BeginSample("ScheduleVertexBonesJob");
 
-            buffers.GetAccessorAndData(weightsAccessorIndex, out var weightsAcc, out var weightsData, out var weightsByteStride);
+            var weightsAcc = buffers.GetAccessor(weightsAccessorIndex);
+            if (!buffers.TryGetAccessorData(weightsAcc, 4, out var weightsData, out var weightsByteStride)
+                || weightsAcc.count > vertexCount)
+            {
+                m_Logger?.Error(LogCode.AccessorAccessFailed, weightsAccessorIndex.ToString());
+                Profiler.EndSample();
+                return null;
+            }
             if (weightsAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "bone weights");
+            }
+
+            var jointsAcc = buffers.GetAccessor(jointsAccessorIndex);
+            if (!buffers.TryGetAccessorData(jointsAcc, 4, out var jointsData, out var jointsByteStride)
+                || jointsAcc.count > vertexCount)
+            {
+                m_Logger?.Error(LogCode.AccessorAccessFailed, jointsAccessorIndex.ToString());
+                Profiler.EndSample();
+                return null;
+            }
+            if (jointsAcc.IsSparse)
+            {
+                m_Logger?.Error(LogCode.SparseAccessor, "bone joints");
             }
             // Ignoring NativeArray safety here, so that multiple jobs (one per sub-mesh) can write to the same array.
             var vDataPtr = (byte*)NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(m_Data);
@@ -71,11 +92,6 @@ namespace GLTFast
             }
 
             {
-                buffers.GetAccessorAndData(jointsAccessorIndex, out var jointsAcc, out var jointsData, out var jointsByteStride);
-                if (jointsAcc.IsSparse)
-                {
-                    m_Logger?.Error(LogCode.SparseAccessor, "bone joints");
-                }
                 var h = GetJointsJob(
                     jointsData,
                     jointsAcc.count,
@@ -91,6 +107,7 @@ namespace GLTFast
                 }
                 else
                 {
+                    weightsHandle.Complete();
                     Profiler.EndSample();
                     return null;
                 }

@@ -39,24 +39,31 @@ namespace GLTFast
                 await Task.Yield();
             }
 
-            var task = addons
+            var addonTask = addons
                 ?.First<ITextureImageLoader>(addon => addon.IsAbleToLoad(data.Data.AsReadOnlySpan()))
-                ?.LoadImage(
+                ?.LoadImageGovernedAsync(
+                    context,
                     data.Data,
                     linear,
                     readable,
                     generateMipMaps,
                     cancellationToken);
-            if (task != null)
+            if (addonTask != null)
             {
-                return await task;
+                return await addonTask;
             }
 
             if (ImageFormatDetection.IsPngOrJpeg(data.Data.AsReadOnlySpan()))
             {
 #if UNITY_IMAGECONVERSION
-                return await ImageConversionImageLoader.LoadAsync(
-                    context, settings, data.Data, linear, readable, cancellationToken);
+                Task<ImageResult> task;
+                using (context.Scheduler.Install(cancellationToken))
+                {
+                    task = ImageConversionImageLoader.LoadAsync(
+                        context, settings, data.Data, linear, readable, cancellationToken);
+                }
+
+                return await task;
 #else
                 context.Logger?.Error(LogCode.ImageConversionNotEnabled);
                 return ImageResult.Null;
@@ -66,9 +73,14 @@ namespace GLTFast
             if (ImageFormatDetection.IsKtx(data.Data.AsReadOnlySpan()))
             {
 #if KTX_IS_RECENT
-                var result = await KtxImageLoader.LoadAsync(
-                    context, settings, data.Data, linear, readable, cancellationToken);
-                return result;
+                Task<ImageResult> task;
+                using (context.Scheduler.Install(cancellationToken))
+                {
+                    task = KtxImageLoader.LoadAsync(
+                        context, settings, data.Data, linear, readable, cancellationToken);
+                }
+
+                return await task;
 #else
                 context.Logger?.Error(
                     LogCode.PackageMissing, "KTX for Unity", ExtensionName.TextureBasisUniversal);
@@ -93,13 +105,13 @@ namespace GLTFast
         }
 
         internal static async Task<ImageResult> LoadImageAsync(
+            ImportContext context,
             Task<IReadOnlyDisposableData> dataTask,
             bool linear,
             bool readable,
             bool generateMipMaps,
             CancellationToken cancellationToken,
-            ITextureImageLoader loader,
-            IDeferAgent deferAgent
+            ITextureImageLoader loader
         )
         {
             using var data = await dataTask;
@@ -107,12 +119,14 @@ namespace GLTFast
             {
                 return ImageResult.Null;
             }
-            while (deferAgent.ShouldDefer())
+            while (context.DeferAgent.ShouldDefer())
             {
                 cancellationToken.ThrowIfCancellationRequestedWithTracking();
                 await Task.Yield();
             }
-            return await loader.LoadImage(data.Data, linear, readable, generateMipMaps, cancellationToken);
+
+            return await loader.LoadImageGovernedAsync(
+                context, data.Data, linear, readable, generateMipMaps, cancellationToken);
         }
 
         internal static async ValueTask<IReadOnlyDisposableData> LoadDataAsync(

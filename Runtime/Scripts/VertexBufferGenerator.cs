@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using GLTFast.Logging;
 using GLTFast.Schema;
-using GLTFast.Vertex;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -29,8 +28,9 @@ namespace GLTFast
         bool m_HasTangents;
         bool m_HasColors;
         bool m_HasBones;
+        bool m_ColorsAndTexCoordsShareStream;
 
-        VertexBufferTexCoordsBase m_TexCoords;
+        VertexBufferTexCoords m_TexCoords;
         VertexBufferColors m_Colors;
         VertexBufferBones m_Bones;
 
@@ -114,37 +114,34 @@ namespace GLTFast
             var firstAttributes = m_Attributes[0];
 
             var uvSetCount = firstAttributes.GetTexCoordsCount();
-            if (uvSetCount > 0)
+            if (uvSetCount > maxUvSetCount)
             {
-                if (uvSetCount > maxUvSetCount)
-                {
-                    // More than eight UV sets are not supported yet
-                    m_Logger?.Warning(LogCode.UVLimit);
-                    uvSetCount = maxUvSetCount;
-                }
-
-                jobCount += uvSetCount * m_Attributes.Length;
-                m_TexCoords = uvSetCount switch
-                {
-                    1 => new VertexBufferTexCoords<VTexCoord1>(uvSetCount, VertexCount, m_Logger),
-                    2 => new VertexBufferTexCoords<VTexCoord2>(uvSetCount, VertexCount, m_Logger),
-                    3 => new VertexBufferTexCoords<VTexCoord3>(uvSetCount, VertexCount, m_Logger),
-                    4 => new VertexBufferTexCoords<VTexCoord4>(uvSetCount, VertexCount, m_Logger),
-                    5 => new VertexBufferTexCoords<VTexCoord5>(uvSetCount, VertexCount, m_Logger),
-                    6 => new VertexBufferTexCoords<VTexCoord6>(uvSetCount, VertexCount, m_Logger),
-                    7 => new VertexBufferTexCoords<VTexCoord7>(uvSetCount, VertexCount, m_Logger),
-                    _ => new VertexBufferTexCoords<VTexCoord8>(uvSetCount, VertexCount, m_Logger)
-                };
+                // More than eight UV sets are not supported yet
+                m_Logger?.Warning(LogCode.UVLimit);
+                uvSetCount = maxUvSetCount;
             }
 
             m_HasColors = firstAttributes.COLOR_0 >= 0;
+            m_HasBones = firstAttributes.WEIGHTS_0 >= 0 && firstAttributes.JOINTS_0 >= 0;
+            m_ColorsAndTexCoordsShareStream = m_HasBones && m_HasColors && uvSetCount > 0;
+
             if (m_HasColors)
             {
                 jobCount += m_Attributes.Length;
-                m_Colors = new VertexBufferColors(VertexCount, m_Logger);
+                var colorsByteStride = sizeof(float4);
+                if (m_ColorsAndTexCoordsShareStream)
+                    colorsByteStride += uvSetCount * sizeof(float2);
+                m_Colors = new VertexBufferColors(VertexCount, colorsByteStride, m_Logger);
             }
 
-            m_HasBones = firstAttributes.WEIGHTS_0 >= 0 && firstAttributes.JOINTS_0 >= 0;
+            if (uvSetCount > 0)
+            {
+                jobCount += uvSetCount * m_Attributes.Length;
+                m_TexCoords = m_ColorsAndTexCoordsShareStream
+                    ? new VertexBufferTexCoords(uvSetCount, m_Colors.Data, m_Colors.ByteStride, sizeof(float4), m_Logger)
+                    : new VertexBufferTexCoords(uvSetCount, VertexCount, m_Logger);
+            }
+
             if (m_HasBones)
             {
                 jobCount++;
@@ -185,54 +182,76 @@ namespace GLTFast
             {
                 var att = m_Attributes[i];
                 if (!SchedulePositionsJobs(i, vDataPtr, outputByteStride, handles, ref handleIndex))
-                    return null;
+                    return AbortJobs(handles);
 
                 if (att.NORMAL >= 0
                     && !ScheduleNormalsJobs(att, vDataPtr, outputByteStride, i, handles, ref handleIndex)
                     )
-                    return null;
+                    return AbortJobs(handles);
 
                 if (att.TANGENT >= 0
                     && !ScheduleTangentsJobs(att, vDataPtr, outputByteStride, i, handles, ref handleIndex)
                    )
-                    return null;
+                    return AbortJobs(handles);
 
-                if (m_TexCoords != null)
-                {
-                    handleIndex = ScheduleTexCoordJobs(att, uvSetCount, i, handles, handleIndex);
-                }
+                if (m_TexCoords != null && !ScheduleTexCoordJobs(att, uvSetCount, i, handles, ref handleIndex))
+                    return AbortJobs(handles);
 
                 if (m_HasColors && !ScheduleColorsJobs(att, i, handles, ref handleIndex))
-                    return null;
+                    return AbortJobs(handles);
             }
             if (m_HasBones && !ScheduleVertexBonesJobs(m_Attributes, handles.GetSubArray(handleIndex, 1)))
-                return null;
+                return AbortJobs(handles);
 
             var handle = jobCount > 1 ? JobHandle.CombineDependencies(handles) : handles[0];
             handles.Dispose();
             return handle;
         }
 
+        static JobHandle? AbortJobs(NativeArray<JobHandle> handles)
+        {
+            CompleteAndDispose(handles);
+            return null;
+        }
+
         unsafe bool SchedulePositionsJobs(int i, byte* vDataPtr, int outputByteStride, NativeArray<JobHandle> handles, ref int handleIndex)
         {
+            void* posIndexData = null;
+            void* posValueData = null;
+            if (m_PositionAccessors[i].IsSparse
+                && !TryGetVector3SparseData(
+                    m_Buffers,
+                    m_Attributes[i].POSITION,
+                    m_PositionAccessors[i],
+                    m_Logger,
+                    out posIndexData,
+                    out posValueData))
+            {
+                return false;
+            }
+
             JobHandle? h = null;
 
             if (m_PositionAccessors[i].bufferView >= 0)
             {
                 h = GetVector3Job(
                     m_Buffers,
+                    m_Attributes[i].POSITION,
                     m_PositionAccessors[i],
                     (float3*)(vDataPtr + outputByteStride * VertexIntervals[i]),
                     outputByteStride,
+                    m_Logger,
                     m_PositionAccessors[i].normalized,
                     false // positional data never needs to be normalized
                 );
+                if (!h.HasValue)
+                {
+                    return false;
+                }
             }
 
             if (m_PositionAccessors[i].IsSparse)
             {
-                m_Buffers.GetAccessorSparseIndices(m_PositionAccessors[i].Sparse.Indices, out var posIndexData);
-                m_Buffers.GetAccessorSparseValues(m_PositionAccessors[i].Sparse.Values, out var posValueData);
                 var sparseJobHandle = GetVector3SparseJob(
                     posIndexData,
                     posValueData,
@@ -272,12 +291,13 @@ namespace GLTFast
 
         unsafe bool ScheduleNormalsJobs(Attributes att, byte* vDataPtr, int outputByteStride, int i, NativeArray<JobHandle> handles, ref int handleIndex)
         {
-            m_Buffers.GetAccessorAndData(
-                att.NORMAL,
-                out var nrmAcc,
-                out var input,
-                out var inputByteStride
-            );
+            var nrmAcc = m_Buffers.GetAccessor(att.NORMAL);
+            GetVertexRange(i, out _, out var vertexCount);
+            if (nrmAcc == null || nrmAcc.count > vertexCount)
+            {
+                m_Logger?.Error(LogCode.AccessorAccessFailed, att.NORMAL.ToString());
+                return false;
+            }
             if (nrmAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "normals");
@@ -285,9 +305,11 @@ namespace GLTFast
 
             var h = GetVector3Job(
                 m_Buffers,
+                att.NORMAL,
                 nrmAcc,
                 (float3*)(vDataPtr + outputByteStride * VertexIntervals[i] + 12),
                 outputByteStride,
+                m_Logger,
                 nrmAcc.normalized
 
             //, normals need to be unit length
@@ -308,12 +330,14 @@ namespace GLTFast
 
         unsafe bool ScheduleTangentsJobs(Attributes att, byte* vDataPtr, int outputByteStride, int i, NativeArray<JobHandle> handles, ref int handleIndex)
         {
-            m_Buffers.GetAccessorAndData(
-                att.TANGENT,
-                out var tanAcc,
-                out var input,
-                out var inputByteStride
-            );
+            var tanAcc = m_Buffers.GetAccessor(att.TANGENT);
+            GetVertexRange(i, out _, out var vertexCount);
+            if (!m_Buffers.TryGetAccessorData(tanAcc, 4, out var input, out var inputByteStride)
+                || tanAcc.count > vertexCount)
+            {
+                m_Logger?.Error(LogCode.AccessorAccessFailed, att.TANGENT.ToString());
+                return false;
+            }
             if (tanAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "tangents");
@@ -342,27 +366,31 @@ namespace GLTFast
             return true;
         }
 
-        int ScheduleTexCoordJobs(Attributes att, int uvSetCount, int i, NativeArray<JobHandle> handles, int handleIndex)
+        bool ScheduleTexCoordJobs(Attributes att, int uvSetCount, int i, NativeArray<JobHandle> handles, ref int handleIndex)
         {
             var uvSuccess = att.TryGetAllUVAccessors(out var uvAccessors, out _);
             Assert.IsTrue(uvSuccess);
             Assert.AreEqual(uvSetCount, uvAccessors.Length);
 
-            m_TexCoords.ScheduleVertexUVJobs(
-                VertexIntervals[i],
+            GetVertexRange(i, out var baseVertex, out var vertexCount);
+            var success = m_TexCoords.ScheduleVertexUVJobs(
+                baseVertex,
+                vertexCount,
                 uvAccessors,
                 handles.GetSubArray(handleIndex, uvAccessors.Length),
                 m_Buffers
             );
             handleIndex += uvAccessors.Length;
-            return handleIndex;
+            return success;
         }
 
         bool ScheduleColorsJobs(Attributes att, int i, NativeArray<JobHandle> handles, ref int handleIndex)
         {
+            GetVertexRange(i, out var baseVertex, out var vertexCount);
             var success = m_Colors.ScheduleVertexColorJob(
                 att.COLOR_0,
-                VertexIntervals[i],
+                baseVertex,
+                vertexCount,
                 handles.GetSubArray(handleIndex, 1),
                 m_Buffers
             );
@@ -383,7 +411,10 @@ namespace GLTFast
                 for (var i = 0; i < attributes.Length; i++)
                 {
                     if (!ScheduleVertexBonesJob(i, out var boneHandle))
+                    {
+                        CompleteAndDispose(boneHandles);
                         return false;
+                    }
                     boneHandles[i] = boneHandle;
                 }
                 handles[0] = JobHandle.CombineDependencies(boneHandles);
@@ -401,11 +432,13 @@ namespace GLTFast
             bool ScheduleVertexBonesJob(int i, out JobHandle handle)
             {
                 var att = attributes[i];
+                GetVertexRange(i, out var baseVertex, out var vertexCount);
 
                 var h = m_Bones.ScheduleVertexBonesJob(
                     att.WEIGHTS_0,
                     att.JOINTS_0,
-                    VertexIntervals[i],
+                    baseVertex,
+                    vertexCount,
                     m_Buffers
                 );
                 if (!h.HasValue)
@@ -448,7 +481,8 @@ namespace GLTFast
             {
                 m_Colors.AddDescriptors(m_Descriptors, vadCount, stream);
                 vadCount++;
-                stream++;
+                if (!m_ColorsAndTexCoordsShareStream)
+                    stream++;
             }
 
             if (m_TexCoords != null)
@@ -490,7 +524,7 @@ namespace GLTFast
                 stream++;
             }
 
-            if (m_TexCoords != null)
+            if (m_TexCoords != null && !m_ColorsAndTexCoordsShareStream)
             {
                 m_TexCoords.ApplyOnMesh(msh, stream, flags);
                 stream++;

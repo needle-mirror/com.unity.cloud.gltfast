@@ -58,12 +58,9 @@ namespace GLTFast
             CancellationToken cancellationToken
         )
         {
-            while (context.DeferAgent.ShouldDefer())
-            {
-                if (cancellationToken.IsCancellationRequested)
-                    return ImageResult.Null;
-                await Task.Yield();
-            }
+            await context.Scheduler.YieldAsync(0f);
+            if (cancellationToken.IsCancellationRequested)
+                return ImageResult.Null;
 
             Profiler.BeginSample("ImageConversionLoadContext.LoadTexture2D");
             // TODO: Investigate alternative: native texture creation in worker thread

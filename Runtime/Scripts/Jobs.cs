@@ -591,13 +591,17 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int index)
         {
             var src = (float3*)(input + (index * inputByteStride));
-            result[index] = new float4(*src, 1f);
+            *(float4*)((byte*)result + index * outputByteStride) = new float4(*src, 1f);
         }
     }
 
@@ -612,13 +616,17 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int index)
         {
             var src = input + (index * inputByteStride);
-            result[index] = new float4(
+            *(float4*)((byte*)result + index * outputByteStride) = new float4(
                 new float3(src[0], src[1], src[2]) / byte.MaxValue,
                 1f
             );
@@ -636,13 +644,17 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public ushort* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int index)
         {
             var src = (ushort*)(((byte*)input) + (index * inputByteStride));
-            result[index] = new float4(
+            *(float4*)((byte*)result + index * outputByteStride) = new float4(
                 new float3(src[0], src[1], src[2]) / ushort.MaxValue,
                 1f
             );
@@ -660,22 +672,27 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public ushort* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int startIndex, int count)
         {
             var src = (ushort*)((byte*)input + startIndex * inputByteStride);
-            var endIndex = startIndex + count;
-            for (var index = startIndex; index < endIndex; index++)
+            var dst = (float4*)((byte*)result + startIndex * outputByteStride);
+            for (var index = 0; index < count; index++)
             {
-                result[index] = new float4(
+                *dst = new float4(
                     src[0] / (float)ushort.MaxValue,
                     src[1] / (float)ushort.MaxValue,
                     src[2] / (float)ushort.MaxValue,
                     src[3] / (float)ushort.MaxValue
                 );
                 src = (ushort*)((byte*)src + inputByteStride);
+                dst = (float4*)((byte*)dst + outputByteStride);
             }
         }
     }
@@ -691,17 +708,22 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int startIndex, int count)
         {
             var src = (float4*)(input + startIndex * inputByteStride);
-            var endIndex = startIndex + count;
-            for (var index = startIndex; index < endIndex; index++)
+            var dst = (float4*)((byte*)result + startIndex * outputByteStride);
+            for (var index = 0; index < count; index++)
             {
-                result[index] = *src;
+                *dst = *src;
                 src = (float4*)((byte*)src + inputByteStride);
+                dst = (float4*)((byte*)dst + outputByteStride);
             }
         }
     }
@@ -717,13 +739,17 @@ namespace GLTFast.Jobs
         [NativeDisableUnsafePtrRestriction]
         public byte* input;
 
-        [WriteOnly]
-        public NativeArray<float4> result;
+        [ReadOnly]
+        public int outputByteStride;
+
+        [ReadOnly]
+        [NativeDisableUnsafePtrRestriction]
+        public float4* result;
 
         public void Execute(int index)
         {
             var src = input + (index * inputByteStride);
-            result[index] = new float4(
+            *(float4*)((byte*)result + index * outputByteStride) = new float4(
                 src[0] / (float)byte.MaxValue,
                 src[1] / (float)byte.MaxValue,
                 src[2] / (float)byte.MaxValue,

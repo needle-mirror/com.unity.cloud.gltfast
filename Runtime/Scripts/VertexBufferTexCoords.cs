@@ -16,55 +16,47 @@ namespace GLTFast
     using Logging;
     using Schema;
 
-    abstract class VertexBufferTexCoordsBase : IDisposable
+    sealed class VertexBufferTexCoords : IDisposable
     {
+        readonly ICodeLogger m_Logger;
 
-        protected ICodeLogger m_Logger;
+        NativeArray<byte> m_Data;
+        readonly bool m_OwnsData;
+        readonly int m_ByteStride;
+        readonly int m_ByteOffset;
 
-        protected VertexBufferTexCoordsBase(ICodeLogger logger)
+        public unsafe VertexBufferTexCoords(int uvSetCount, int vertexCount, ICodeLogger logger)
         {
             m_Logger = logger;
-        }
-
-        public int UVSetCount { get; protected set; }
-        public abstract bool ScheduleVertexUVJobs(
-            int offset,
-            int[] uvAccessorIndices,
-            NativeArray<JobHandle> handles,
-            IGltfBuffers buffers
-            );
-        public abstract void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream);
-        public abstract void ApplyOnMesh(
-            UnityEngine.Mesh msh,
-            int stream,
-            MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags
-            );
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected abstract void Dispose(bool disposing);
-    }
-
-    class VertexBufferTexCoords<T> : VertexBufferTexCoordsBase where T : unmanaged
-    {
-        NativeArray<T> m_Data;
-
-        public VertexBufferTexCoords(int uvSetCount, int vertexCount, ICodeLogger logger)
-            : base(logger)
-        {
             UVSetCount = uvSetCount;
-            m_Data = new NativeArray<T>(
-                vertexCount,
+            m_ByteStride = uvSetCount * sizeof(float2);
+            m_Data = new NativeArray<byte>(
+                vertexCount * m_ByteStride,
                 VertexBufferGeneratorBase.defaultAllocator
             );
+            m_OwnsData = true;
         }
 
-        public override unsafe bool ScheduleVertexUVJobs(
+        public VertexBufferTexCoords(
+            int uvSetCount,
+            NativeArray<byte> data,
+            int byteStride,
+            int byteOffset,
+            ICodeLogger logger
+            )
+        {
+            m_Logger = logger;
+            UVSetCount = uvSetCount;
+            m_Data = data;
+            m_ByteStride = byteStride;
+            m_ByteOffset = byteOffset;
+        }
+
+        public int UVSetCount { get; }
+
+        public unsafe bool ScheduleVertexUVJobs(
             int offset,
+            int vertexCount,
             int[] uvAccessorIndices,
             NativeArray<JobHandle> handles,
             IGltfBuffers buffers
@@ -73,17 +65,22 @@ namespace GLTFast
             Profiler.BeginSample("ScheduleVertexUVJobs");
             Profiler.BeginSample("AllocateNativeArray");
 
-            var vDataPtr = (byte*)m_Data.GetUnsafeReadOnlyPtr();
+            var vDataPtr = (byte*)m_Data.GetUnsafeReadOnlyPtr() + m_ByteOffset;
             Profiler.EndSample();
-            var outputByteStride = UVSetCount * sizeof(float2);
 
             for (var uvSet = 0; uvSet < UVSetCount; uvSet++)
             {
                 var accIndex = uvAccessorIndices[uvSet];
-                buffers.GetAccessorAndData(accIndex, out var uvAcc, out var data, out var byteStride);
-                if (uvAcc.IsSparse)
+                var uvAcc = buffers.GetAccessor(accIndex);
+                if (uvAcc is { IsSparse: true })
                 {
                     m_Logger?.Error(LogCode.SparseAccessor, "UVs");
+                    continue;
+                }
+                if (!buffers.TryGetAccessorData(uvAcc, 2, out var data, out var byteStride)
+                    || uvAcc.count > vertexCount)
+                {
+                    m_Logger?.Error(LogCode.AccessorAccessFailed, accIndex.ToString());
                     Profiler.EndSample();
                     return false;
                 }
@@ -92,8 +89,8 @@ namespace GLTFast
                     uvAcc.count,
                     uvAcc.componentType,
                     byteStride,
-                    (float2*)(vDataPtr + outputByteStride * offset + uvSet * sizeof(float2)),
-                    outputByteStride,
+                    (float2*)(vDataPtr + m_ByteStride * offset + uvSet * sizeof(float2)),
+                    m_ByteStride,
                     uvAcc.normalized
                 );
                 if (h.HasValue)
@@ -110,7 +107,7 @@ namespace GLTFast
             return true;
         }
 
-        public override void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream)
+        public void AddDescriptors(VertexAttributeDescriptor[] dst, ref int offset, int stream)
         {
             for (int i = 0; i < UVSetCount; i++)
             {
@@ -120,7 +117,7 @@ namespace GLTFast
             }
         }
 
-        public override void ApplyOnMesh(
+        public void ApplyOnMesh(
             UnityEngine.Mesh msh,
             int stream,
             MeshUpdateFlags flags = MeshGeneratorBase.defaultMeshUpdateFlags
@@ -131,9 +128,9 @@ namespace GLTFast
             Profiler.EndSample();
         }
 
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
-            if (m_Data.IsCreated)
+            if (m_OwnsData && m_Data.IsCreated)
             {
                 m_Data.Dispose();
             }

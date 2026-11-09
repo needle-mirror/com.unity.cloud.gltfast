@@ -94,28 +94,35 @@ namespace GLTFast
             if (m_HasMorphTargets)
             {
                 vertexIntervals[^1] = vertexCount;
-                InitializeMorphTargets(
-                    primitives,
-                    morphTargetNames,
-                    vertexIntervals,
-                    vertexCount,
-                    morphTargets,
-                    buffers,
-                    deferAgent
-                    );
+                if (!InitializeMorphTargets(
+                        primitives,
+                        morphTargetNames,
+                        vertexIntervals,
+                        vertexCount,
+                        morphTargets,
+                        buffers,
+                        deferAgent,
+                        logger
+                        ))
+                {
+                    m_MorphTargetsJobHandle.Complete();
+                    m_CreationTask = Task.FromResult<Mesh>(null);
+                    return;
+                }
             }
 
-            m_CreationTask = Decode(primitives, buffers, bounds);
+            m_CreationTask = Decode(primitives, buffers, bounds, logger);
         }
 
-        void InitializeMorphTargets(
+        bool InitializeMorphTargets(
             IReadOnlyList<MeshPrimitiveBase> primitives,
             string[] morphTargetNames,
             int[] vertexIntervals,
             int vertexCount,
             MorphTarget[] morphTargets,
             IGltfBuffers buffers,
-            IDeferAgent deferAgent
+            IDeferAgent deferAgent,
+            ICodeLogger logger
             )
         {
             m_MorphTargetsGenerator = new MorphTargetsGenerator(
@@ -128,22 +135,35 @@ namespace GLTFast
                 buffers,
                 deferAgent
             );
-            for (var subMesh = 0; subMesh < primitives.Count; subMesh++)
+            var success = true;
+            for (var subMesh = 0; success && subMesh < primitives.Count; subMesh++)
             {
                 var primitive = primitives[subMesh];
-                for (var morphTargetIndex = 0; morphTargetIndex < primitive.targets.Length; morphTargetIndex++)
+                for (var morphTargetIndex = 0; success && morphTargetIndex < primitive.targets.Length; morphTargetIndex++)
                 {
                     var target = primitive.targets[morphTargetIndex];
-                    m_MorphTargetsGenerator.AddMorphTarget(vertexIntervals[subMesh], subMesh, morphTargetIndex, target);
+                    success = m_MorphTargetsGenerator.AddMorphTarget(
+                        vertexIntervals[subMesh],
+                        vertexIntervals[subMesh + 1] - vertexIntervals[subMesh],
+                        subMesh,
+                        morphTargetIndex,
+                        target,
+                        logger);
                 }
             }
+            if (!success)
+            {
+                logger?.Error(LogCode.MorphTargetContextFail);
+            }
             m_MorphTargetsJobHandle = m_MorphTargetsGenerator.GetJobHandle();
+            return success;
         }
 
         async Task<Mesh> Decode(
             IReadOnlyList<MeshPrimitiveBase> primitives,
             IGltfBuffers buffers,
-            Bounds[] bounds
+            Bounds[] bounds,
+            ICodeLogger logger
             )
         {
             var bufferViews = new NativeArray<byte>.ReadOnly[primitives.Count];
@@ -152,7 +172,13 @@ namespace GLTFast
             for (var index = 0; index < primitives.Count; index++)
             {
                 var dracoExt = primitives[index].Extensions.KHR_draco_mesh_compression;
-                bufferViews[index] = buffers.GetBufferView(dracoExt.bufferView, out _).AsNativeArrayReadOnly();
+                if (!buffers.TryGetBufferView(dracoExt.bufferView, out var bufferView))
+                {
+                    logger?.Error(LogCode.AccessorAccessFailed, primitives[index].attributes.POSITION.ToString());
+                    m_MorphTargetsJobHandle.Complete();
+                    return null;
+                }
+                bufferViews[index] = bufferView.AsNativeArrayReadOnly();
                 attributesArray[index] = dracoExt.attributes;
             }
 
@@ -160,6 +186,7 @@ namespace GLTFast
 
             if (mesh is null)
             {
+                m_MorphTargetsJobHandle.Complete();
                 return null;
             }
 

@@ -14,9 +14,9 @@ namespace GLTFast
         TextureWrapMode m_WrapModeU;
         TextureWrapMode m_WrapModeV;
 
-        public SamplerKey(Sampler sampler)
+        public SamplerKey(Sampler sampler, Sampler.MinFilterMode defaultMinFilter, Sampler.MagFilterMode defaultMagFilter)
         {
-            m_FilterMode = sampler.FilterMode;
+            m_FilterMode = sampler.GetFilterMode(defaultMinFilter, defaultMagFilter);
             m_WrapModeU = sampler.WrapU;
             m_WrapModeV = sampler.WrapV;
         }

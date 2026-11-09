@@ -56,12 +56,6 @@ Shader "Hidden/glTFExportMetalGloss"
                 // Unity R channel goes into B channel
                 // Unity A channel goes into G channel, then inverted
                 float4 result = float4(1, 1 - col.a * _SmoothnessFactor, col.r, 1);
-                #ifdef UNITY_COLORSPACE_GAMMA
-                #else
-                // hack for linear color space, need to figure out
-                // right way to sample textures.
-                result.xyz = GammaToLinearSpace(result.xyz);
-                #endif
                 return result;
             }
             ENDCG

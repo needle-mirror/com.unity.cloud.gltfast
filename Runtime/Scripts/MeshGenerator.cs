@@ -265,6 +265,7 @@ namespace GLTFast
                             LogCode.IndexCountInvalid,
                             accessor.count.ToString()
                         );
+                        CompleteJobs(tmpList);
                         return null;
                     }
 
@@ -272,12 +273,17 @@ namespace GLTFast
 
                     m_Indices.Allocate(subMeshIndex, indexCount);
 
-                    var accessorData = buffers.GetBufferView(
-                        accessor.bufferView,
-                        out _,
-                        accessor.byteOffset,
-                        accessor.ByteSize
-                    );
+                    if (!buffers.TryGetBufferView(
+                            accessor.bufferView,
+                            out var accessorData,
+                            accessor.byteOffset,
+                            accessor.ByteSize
+                        ))
+                    {
+                        logger?.Error(LogCode.AccessorAccessFailed, primitive.indices.ToString());
+                        CompleteJobs(tmpList);
+                        return null;
+                    }
 
                     Assert.AreEqual(accessor.GetAttributeType(), GltfAccessorAttributeType.SCALAR);
                     if (accessor.IsSparse)
@@ -301,7 +307,10 @@ namespace GLTFast
                         }
                     }
                     if (!getIndicesJob.HasValue)
+                    {
+                        CompleteJobs(tmpList);
                         return null;
+                    }
 
                     switch (primitive.mode)
                     {
@@ -399,12 +408,18 @@ namespace GLTFast
 
             if (m_MorphTargetsGenerator != null)
             {
-                for (var subMeshIndex = 0; subMeshIndex < m_Primitives.Count; subMeshIndex++)
+                var morphTargetsAdded = true;
+                for (var subMeshIndex = 0; morphTargetsAdded && subMeshIndex < m_Primitives.Count; subMeshIndex++)
                 {
                     var primitive = m_Primitives[subMeshIndex];
-                    AddMorphTargets(subMeshIndex, primitive, logger);
+                    morphTargetsAdded = AddMorphTargets(subMeshIndex, primitive, logger);
                 }
                 tmpList.Add(m_MorphTargetsGenerator.GetJobHandle());
+                if (!morphTargetsAdded)
+                {
+                    CompleteJobs(tmpList);
+                    return null;
+                }
             }
 
             await AwaitJobs(tmpList);
@@ -412,25 +427,35 @@ namespace GLTFast
             return await CreateMeshResultAsync(logger);
         }
 
-        void AddMorphTargets(int subMesh, MeshPrimitiveBase primitive, ICodeLogger logger)
+        static void CompleteJobs(List<JobHandle> handles)
         {
-            if (m_MorphTargetsGenerator == null)
-                return;
-            var vertexOffset = m_VertexData.VertexIntervals[subMesh];
+            foreach (var handle in handles)
+            {
+                handle.Complete();
+            }
+        }
+
+        bool AddMorphTargets(int subMesh, MeshPrimitiveBase primitive, ICodeLogger logger)
+        {
+            m_VertexData.GetVertexRange(subMesh, out var vertexOffset, out var vertexCount);
             for (var morphTargetIndex = 0; morphTargetIndex < primitive.targets.Length; morphTargetIndex++)
             {
                 var morphTarget = primitive.targets[morphTargetIndex];
                 var success = m_MorphTargetsGenerator.AddMorphTarget(
                     vertexOffset,
+                    vertexCount,
                     subMesh,
                     morphTargetIndex,
-                    morphTarget
+                    morphTarget,
+                    logger
                 );
                 if (!success)
                 {
                     logger?.Error(LogCode.MorphTargetContextFail);
+                    return false;
                 }
             }
+            return true;
         }
 
         async Task<Mesh> CreateMeshResultAsync(ICodeLogger logger)

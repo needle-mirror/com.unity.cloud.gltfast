@@ -17,6 +17,7 @@ namespace GLTFast
             DownloadProvider = downloadProvider;
             Logger = logger;
             DeferAgent = deferAgent;
+            Scheduler = new DeferringSynchronizationContext(deferAgent);
         }
 
         /// <summary>DownloadProvider used by this glTF import instance.</summary>
@@ -27,5 +28,11 @@ namespace GLTFast
 
         /// <summary>Defer agent used by this glTF import instance.</summary>
         public IDeferAgent DeferAgent { get; }
+
+        /// <summary>
+        /// Governs where continuations of code glTFast calls into resume, so that code does not have to consult
+        /// <see cref="DeferAgent"/> itself. Install it around the invocation, not around the await of its result.
+        /// </summary>
+        public DeferringSynchronizationContext Scheduler { get; }
     }
 }

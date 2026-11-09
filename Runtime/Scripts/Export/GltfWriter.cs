@@ -1108,7 +1108,22 @@ namespace GLTFast.Export
                     continue;
                 }
 
-                outputStrides[attribute.stream] += attributeSize;
+                // glTF requires VEC4 skinning attributes.
+                var outputDimension = attribute.dimension;
+                var outputAttributeSize = attributeSize;
+                switch (attribute.attribute)
+                {
+                    case VertexAttribute.BlendWeight:
+                        outputDimension = 4;
+                        outputAttributeSize = 4 * sizeof(float);
+                        break;
+                    case VertexAttribute.BlendIndices:
+                        outputDimension = 4;
+                        outputAttributeSize = 4 * sizeof(ushort);
+                        break;
+                }
+
+                outputStrides[attribute.stream] += outputAttributeSize;
                 // Adhere data alignment rules
                 Assert.IsTrue(attrData.outputOffset % 4 == 0);
 
@@ -1118,7 +1133,7 @@ namespace GLTFast.Export
                     componentType = Accessor.GetComponentType(attribute.format),
                     count = vertexCount,
                 };
-                accessor.SetAttributeType(Accessor.GetAccessorAttributeType(attribute.dimension));
+                accessor.SetAttributeType(Accessor.GetAccessorAttributeType(outputDimension));
 
                 var accessorId = AddAccessor(accessor);
 
@@ -1328,7 +1343,6 @@ namespace GLTFast.Export
                         );
                         break;
                     case VertexAttribute.BlendIndices:
-                        // indices are uint*4 in Unity, and ushort*4 in glTF
                         await ConvertSkinIndicesAttributes(
                             attrData,
                             (uint)inputStrides[attrData.descriptor.stream],
@@ -1600,10 +1614,25 @@ namespace GLTFast.Export
 
             Assert.IsFalse(sync, "Draco mesh compression cannot be performed in synchronous mode.");
 
+#if !DRACO_ENCODE_OPTIONS
+            if (unityMesh.HasVertexAttribute(VertexAttribute.BlendIndices)
+                && unityMesh.GetVertexAttributeDimension(VertexAttribute.BlendIndices) % 4 != 0)
+            {
+                m_Logger?.Error(
+                    $"Draco compression of skinned mesh \"{unityMesh.name}\" results in invalid JOINTS_0/WEIGHTS_0 "
+                    + "accessors, since its bone influences per vertex are not a multiple of four. "
+                    + "Update Draco for Unity (com.unity.cloud.draco) to 5.6.0 or newer to get valid output."
+                    );
+            }
+#endif
+
             var results = await DracoEncoder.EncodeMesh(
                 unityMesh,
                 (QuantizationSettings)m_Settings.DracoSettings,
                 (SpeedSettings)m_Settings.DracoSettings
+#if DRACO_ENCODE_OPTIONS
+                , EncodeOptions.PadSkinAttributesToFour
+#endif
             );
 
             if (results == null) return;
@@ -2090,6 +2119,7 @@ namespace GLTFast.Export
             {
                 input = (byte*)inputStream.GetUnsafeReadOnlyPtr() + attrData.inputOffset,
                 inputByteStride = inputByteStride,
+                inputDimension = attrData.descriptor.dimension,
                 outputByteStride = outputByteStride,
                 output = (byte*)outputStream.GetUnsafePtr() + attrData.outputOffset,
             }.Schedule(vertexCount, k_DefaultInnerLoopBatchCount);
@@ -2126,11 +2156,11 @@ namespace GLTFast.Export
         {
             var job = new ExportJobs.ConvertSkinIndicesJob
             {
-                input = (byte*)input.GetUnsafeReadOnlyPtr(),
+                input = (byte*)input.GetUnsafeReadOnlyPtr() + indicesAttrData.inputOffset,
                 inputByteStride = inputByteStride,
+                inputDimension = indicesAttrData.descriptor.dimension,
                 outputByteStride = outputByteStride,
-                indicesOffset = indicesAttrData.inputOffset,
-                output = (byte*)output.GetUnsafePtr()
+                output = (byte*)output.GetUnsafePtr() + indicesAttrData.outputOffset
             }.Schedule(vertexCount, k_DefaultInnerLoopBatchCount);
             return job;
         }

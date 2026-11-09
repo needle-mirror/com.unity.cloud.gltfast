@@ -92,6 +92,7 @@ namespace GLTFast
             var instantiator = GetDefaultInstantiator(logger);
             var success = await Importer.InstantiateSceneAsync(instantiator, sceneIndex);
             PostInstantiation(instantiator, success);
+            CurrentSceneId = success ? sceneIndex : (int?)null;
             return success;
         }
 
@@ -106,6 +107,7 @@ namespace GLTFast
             if (Importer == null) return false;
             var success = await Importer.InstantiateSceneAsync(instantiator, sceneIndex);
             PostInstantiation(instantiator, success);
+            CurrentSceneId = success ? sceneIndex : (int?)null;
             return success;
         }
 

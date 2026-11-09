@@ -27,6 +27,7 @@ namespace GLTFast.Export
         GltfWriter m_Writer;
         IMaterialExport m_MaterialExport;
         GameObjectExportSettings m_Settings;
+        ICodeLogger m_Logger;
 
         /// <summary>
         /// Provides glTF export of GameObject based scenes and hierarchies.
@@ -47,6 +48,7 @@ namespace GLTFast.Export
         {
             m_Settings = gameObjectExportSettings ?? new GameObjectExportSettings();
             m_Writer = new GltfWriter(exportSettings, deferAgent, logger);
+            m_Logger = logger;
             m_MaterialExport = materialExport ?? MaterialExport.GetDefaultMaterialExport();
         }
 
@@ -354,11 +356,9 @@ namespace GLTFast.Export
                         var bone = bones[i];
                         if (!transformNodeId.TryGetValue(bone, out joints[i]))
                         {
-#if DEBUG
-                            Debug.LogError($"Skip skin on {transform.name}: No node ID for bone transform {bone.name} found!");
+                            m_Logger?.Error(LogCode.SkinJointNotFound, transform.name, bone.name);
                             joints = null;
                             break;
-#endif
                         }
                     }
                 }

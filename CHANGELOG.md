@@ -4,6 +4,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.21.0] - 2026-11-09
+
+### Added
+- glTFast now governs where the `await` continuations of an [ITextureImageLoader](xref:GLTFast.ITextureImageLoader) resume, so custom image loaders keep the main thread responsive without consulting the [IDeferAgent](xref:GLTFast.IDeferAgent). Split long synchronous work with `await Task.Yield()`.
+- `LogCode.SkinJointNotFound`
+
+### Fixed
+- UAC2017 warnings on Unity 7000.0 ("Failed to generate a Burst direct call").
+- Skinned meshes with vertex colors and texture coordinates use the vertex stream layout Unity requires and no longer log a warning on import.
+- (Import) Loading a glTF from a rooted POSIX path (e.g. `/tmp/file.gltf`) failed with *URI must be absolute* on CoreCLR based Unity versions. Such a path is an ambiguous URI and CoreCLR resolves it to a relative one, unlike Mono. It is now promoted to an absolute file URI on both runtimes, both for the glTF itself and for the base URI that external buffers and images are resolved against.
+- (Test) The test glTF JSON generator emitted different files on Mono and CoreCLR, which made `TestGltfJsonGeneratorTests.GeneratorOutputIsDeterministic` fail on CoreCLR based Unity versions. Mono rounds decimal midpoints away from zero while CoreCLR rounds them to even, so no `float.ToString` format is byte-stable across both. Floats are now formatted from a scaled integer with an explicit midpoint rule, at up to six fractional digits. Also, Unity 6's Mono evaluates float arithmetic at double precision while CoreCLR rounds every step to single precision, so random values are now computed in double and converted to float once.
+- (Test) `MainThreadBudgetTests.GovernedAwaitsDoNotAllocate` failed in Unity 7000 IL2CPP players.
+- Removed ambiguity with `System.Runtime.CompilerServices.AsyncHelpers` in .Net10
+- (Import) `EXT_meshopt_compression` accessors sharing a bufferView at a non-zero offset failed to load (with collections checks enabled) or read the wrong stride, collapsing e.g. animation keyframes to their first value (thanks [@camnewnham](https://github.com/camnewnham) for [#821](https://github.com/atteneder/glTFast/pull/821)).
+- (Import) Main thread stall when loading glTF-binary files with large JSON chunks. The JSON chunk is now decoded to a string on a background thread when the defer agent predicts it exceeds the frame budget, like the JSON parse (thanks [@nickdnk](https://github.com/nickdnk) for [#54](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/54)).
+- (Export) In Linear color space projects, roughness and metallic (and, for HDRP mask maps, occlusion) values derived from a Lit/Standard material's metallic-gloss map or an HDRP mask map were wrongly gamma-converted, making exported materials too glossy.
+- (Export) Compiler error *`LitMaterialExport` could not be found* in Built-In Render Pipeline projects that include Shader Graph but no URP or HDRP (fixes [#60](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/60)).
+- (Test) Tests compile and pass in non-debug builds (e.g. Unity 7000 players, where the `DEBUG` scripting symbol is no longer coupled to development builds).
+- (Export) In non-debug builds, skinned meshes with bones outside the export got invalid joints. Such skins are now skipped in all builds and reported to the [ICodeLogger](xref:GLTFast.Logging.ICodeLogger) as `LogCode.SkinJointNotFound` error (instead of `Debug.LogError`).
+- (Export) Skinned meshes with fewer than four bone influences per vertex were exported with invalid `JOINTS_0`/`WEIGHTS_0` accessors (e.g. `VEC2` instead of `VEC4`) and re-imported with a broken skin. Bone indices and weights are now padded with zeros to `VEC4` (fixes [#45](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/issues/45)).
+- (Export) Draco-compressed skinned meshes with fewer than four bone influences per vertex were exported with invalid `JOINTS_0`/`WEIGHTS_0` accessors (e.g. `VEC2` instead of `VEC4`). Bone indices and weights are now padded with zeros to `VEC4`. Requires [Draco for Unity](https://docs.unity3d.com/Packages/com.unity.cloud.draco@latest) 5.6.0 or newer; with older versions, such exports log an error asking to update.
+- (Import) Vertex attributes, indices and sparse accessors that overrun their buffer view fail the mesh primitive instead of reading outside it.
+- (Import) Inverse bind matrices and animation rotations that overrun their buffer view fail the load instead of reading outside it.
+- (Import) A sparse accessor index past the accessor's `count` fails the mesh primitive instead of writing outside its vertex data.
+- (Import) A vertex attribute or morph target with more elements than the mesh primitive's positions fails the mesh primitive instead of writing past its vertex data.
+- (Import) A mesh primitive whose indices or morph targets cannot be read fails with a log instead of throwing or importing empty data.
+- (Import) `EXT_meshopt_compression` vertex attributes are read at the buffer view's stride, and a buffer view whose `byteLength` or `byteStride` disagrees with the extension fails the mesh primitive.
+- (Import) A mesh that fails to load no longer leaks the Unity meshes and native buffers of the meshes after it.
+- (Import) Cubic spline animation of morph target weights read the wrong values and tangents when a mesh had more than one morph target.
+- (Import) [GltfAssetBase.CurrentSceneId](xref:GLTFast.GltfAssetBase.CurrentSceneId) reported the main scene instead of the scene `InstantiateScene` instantiated.
+- (Import) Animation curves now hold the first sampler output value before the sampler's first input time, instead of showing a wrong value at time 0 (thanks [Apidcloud](https://github.com/Apidcloud) for initiating this via [#50](https://github.com/Unity-Technologies/com.unity.cloud.gltfast/pull/50)).
+- (Import) A design-time import no longer logs a warning on Unity 7000 that the object set via `SetMainObject` cannot become the main asset.
+- (Import) The first glTF texture to use an image gets its [Sampler](xref:GLTFast.Schema.Sampler)'s filter and wrap modes again; since 6.17.0 it stayed bilinear and repeating. Without a sampler, it now follows [ImportSettings.DefaultMinFilterMode](xref:GLTFast.ImportSettings.DefaultMinFilterMode) and [DefaultMagFilterMode](xref:GLTFast.ImportSettings.DefaultMagFilterMode).
+
 ## [6.20.0] - 2026-08-25
 
 ### Added

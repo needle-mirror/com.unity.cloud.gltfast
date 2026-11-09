@@ -43,10 +43,6 @@ Shader "Hidden/glTFExportMaskMap"
             {
                 float4 col = tex2D(_MainTex, i.uv);
                 float4 result = float4(col.g, 1 - col.a, col.r, 1);
-                #ifdef UNITY_COLORSPACE_GAMMA
-                #else
-                result.xyz = GammaToLinearSpace(result.xyz);
-                #endif
                 return result;
             }
             ENDCG

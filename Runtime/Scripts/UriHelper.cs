@@ -16,6 +16,7 @@ namespace GLTFast
         public static Uri GetBaseUri(Uri uri)
         {
             if (uri == null) return null;
+            uri = GetAbsoluteUri(uri);
             if (!uri.IsAbsoluteUri)
             {
                 var directoryName = Path.GetDirectoryName(uri.OriginalString) ?? "";
@@ -26,6 +27,24 @@ namespace GLTFast
             return index < 0
                 ? new Uri("", UriKind.Relative)
                 : new Uri(uriString.Substring(0, index + 1));
+        }
+
+        /// <summary>
+        /// Returns the absolute equivalent of a URI, if there is one.
+        /// </summary>
+        /// <param name="uri">Absolute or relative URI</param>
+        /// <returns>Absolute URI, if <paramref name="uri"/> has an absolute interpretation. The unaltered input
+        /// otherwise.</returns>
+        /// <remarks>
+        /// A rooted file path like "/tmp/file.gltf" is ambiguous. Mono resolves it to an absolute file URI, while
+        /// CoreCLR prefers the relative interpretation, so promoting it here keeps both runtimes consistent.
+        /// </remarks>
+        public static Uri GetAbsoluteUri(Uri uri)
+        {
+            return uri is { IsAbsoluteUri: false }
+                && Uri.TryCreate(uri.OriginalString, UriKind.Absolute, out var absoluteUri)
+                ? absoluteUri
+                : uri;
         }
 
         /// <summary>

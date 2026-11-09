@@ -168,37 +168,37 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt8(void* baseAddress, int index)
+        internal static int GetIndexValueUInt8(void* baseAddress, int index)
         {
             return *((byte*)baseAddress + index);
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueInt8(void* baseAddress, int index)
+        internal static int GetIndexValueInt8(void* baseAddress, int index)
         {
             return *(((sbyte*)baseAddress) + index);
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt16(void* baseAddress, int index)
+        internal static int GetIndexValueUInt16(void* baseAddress, int index)
         {
             return *(((ushort*)baseAddress) + index);
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueInt16(void* baseAddress, int index)
+        internal static int GetIndexValueInt16(void* baseAddress, int index)
         {
             return *(((short*)baseAddress) + index);
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetIndexDelegate))]
-        static int GetIndexValueUInt32(void* baseAddress, int index)
+        internal static int GetIndexValueUInt32(void* baseAddress, int index)
         {
             return (int)*(((uint*)baseAddress) + index);
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Float(float3* destination, void* src)
+        internal static void GetFloat3Float(float3* destination, void* src)
         {
             destination->x = -*(float*)src;
             destination->y = *((float*)src + 1);
@@ -206,7 +206,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int8(float3* destination, void* src)
+        internal static void GetFloat3Int8(float3* destination, void* src)
         {
             destination->x = -*(sbyte*)src;
             destination->y = *((sbyte*)src + 1);
@@ -214,7 +214,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt8(float3* destination, void* src)
+        internal static void GetFloat3UInt8(float3* destination, void* src)
         {
             destination->x = -*(byte*)src;
             destination->y = *((byte*)src + 1);
@@ -222,7 +222,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int16(float3* destination, void* src)
+        internal static void GetFloat3Int16(float3* destination, void* src)
         {
             destination->x = -*(short*)src;
             destination->y = *((short*)src + 1);
@@ -230,7 +230,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt16(float3* destination, void* src)
+        internal static void GetFloat3UInt16(float3* destination, void* src)
         {
             destination->x = -*(ushort*)src;
             destination->y = *((ushort*)src + 1);
@@ -238,7 +238,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt32(float3* destination, void* src)
+        internal static void GetFloat3UInt32(float3* destination, void* src)
         {
             destination->x = -*(uint*)src;
             destination->y = *((uint*)src + 1);
@@ -246,7 +246,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int8Normalized(float3* destination, void* src)
+        internal static void GetFloat3Int8Normalized(float3* destination, void* src)
         {
             destination->x = -math.max(*(sbyte*)src / 127f, -1);
             destination->y = math.max(*((sbyte*)src + 1) / 127f, -1);
@@ -254,7 +254,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt8Normalized(float3* destination, void* src)
+        internal static void GetFloat3UInt8Normalized(float3* destination, void* src)
         {
             destination->x = -*(byte*)src / 255f;
             destination->y = *((byte*)src + 1) / 255f;
@@ -262,7 +262,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3Int16Normalized(float3* destination, void* src)
+        internal static void GetFloat3Int16Normalized(float3* destination, void* src)
         {
             destination->x = -math.max(*(short*)src / (float)short.MaxValue, -1f);
             destination->y = math.max(*((short*)src + 1) / (float)short.MaxValue, -1f);
@@ -270,7 +270,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt16Normalized(float3* destination, void* src)
+        internal static void GetFloat3UInt16Normalized(float3* destination, void* src)
         {
             destination->x = -*(ushort*)src / (float)ushort.MaxValue;
             destination->y = *((ushort*)src + 1) / (float)ushort.MaxValue;
@@ -278,7 +278,7 @@ namespace GLTFast.Jobs
         }
 
         [BurstCompile, MonoPInvokeCallback(typeof(GetFloat3Delegate))]
-        static void GetFloat3UInt32Normalized(float3* destination, void* src)
+        internal static void GetFloat3UInt32Normalized(float3* destination, void* src)
         {
             destination->x = -*(uint*)src / (float)uint.MaxValue;
             destination->y = *((uint*)src + 1) / (float)uint.MaxValue;

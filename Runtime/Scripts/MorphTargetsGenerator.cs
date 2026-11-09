@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using GLTFast.Logging;
 using GLTFast.Schema;
 using Unity.Collections;
 using Unity.Jobs;
@@ -15,7 +16,7 @@ using Mesh = UnityEngine.Mesh;
 namespace GLTFast
 {
 
-    class MorphTargetsGenerator
+    class MorphTargetsGenerator : IDisposable
     {
         readonly string[] m_MorphTargetNames;
         readonly IGltfBuffers m_Buffers;
@@ -49,16 +50,20 @@ namespace GLTFast
 
         public bool AddMorphTarget(
             int offset,
+            int vertexCount,
             int subMesh,
             int morphTargetIndex,
-            MorphTarget morphTarget
+            MorphTarget morphTarget,
+            ICodeLogger logger
             )
         {
             var morphTargetGenerator = m_Contexts[morphTargetIndex];
             var jobHandle = morphTargetGenerator.ScheduleMorphTargetJobs(
                 morphTarget,
                 offset,
-                m_Buffers
+                vertexCount,
+                m_Buffers,
+                logger
                 );
             if (jobHandle.HasValue)
             {
@@ -85,9 +90,28 @@ namespace GLTFast
                 var context = m_Contexts[index];
                 context.AddToMesh(mesh, m_MorphTargetNames?[index] ?? index.ToString());
                 context.Dispose();
+                m_Contexts[index] = null;
                 await m_DeferAgent.BreakPoint();
             }
             m_Contexts = null;
+        }
+
+        public void Dispose()
+        {
+            if (m_Contexts != null)
+            {
+                foreach (var context in m_Contexts)
+                {
+                    context?.Dispose();
+                }
+
+                m_Contexts = null;
+            }
+
+            if (m_Handles.IsCreated)
+            {
+                m_Handles.Dispose();
+            }
         }
     }
 
@@ -122,64 +146,58 @@ namespace GLTFast
         public unsafe JobHandle? ScheduleMorphTargetJobs(
             MorphTarget morphTarget,
             int offset,
-            IGltfBuffers buffers
+            int vertexCount,
+            IGltfBuffers buffers,
+            ICodeLogger logger
         )
         {
             Profiler.BeginSample("ScheduleMorphTargetJobs");
 
-            buffers.GetAccessorAndData(
-                morphTarget.POSITION,
-                out var posAcc,
-                out var posData,
-                out _
-                );
+            if (!TryGetAccessor(buffers, morphTarget.POSITION, vertexCount, logger, out var posAcc))
+            {
+                Profiler.EndSample();
+                return null;
+            }
 
             var jobCount = 1;
             if (posAcc.IsSparse && posAcc.bufferView >= 0)
                 jobCount++;
 
             AccessorBase nrmAcc = null;
-            void* nrmInput = null;
-            var nrmInputByteStride = 0;
 
             if (morphTarget.NORMAL >= 0)
             {
-                buffers.GetAccessorAndData(morphTarget.NORMAL, out nrmAcc, out nrmInput, out nrmInputByteStride);
+                if (!TryGetAccessor(buffers, morphTarget.NORMAL, vertexCount, logger, out nrmAcc))
+                {
+                    Profiler.EndSample();
+                    return null;
+                }
                 jobCount += nrmAcc.IsSparse && nrmAcc.bufferView >= 0 ? 2 : 1;
             }
 
             AccessorBase tanAcc = null;
-            void* tanInput = null;
-            var tanInputByteStride = 0;
 
             if (morphTarget.TANGENT >= 0)
             {
-                buffers.GetAccessorAndData(morphTarget.TANGENT, out tanAcc, out tanInput, out tanInputByteStride);
+                if (!TryGetAccessor(buffers, morphTarget.TANGENT, vertexCount, logger, out tanAcc))
+                {
+                    Profiler.EndSample();
+                    return null;
+                }
                 jobCount += tanAcc.IsSparse && tanAcc.bufferView >= 0 ? 2 : 1;
             }
 
             var handles = new NativeArray<JobHandle>(jobCount, VertexBufferGeneratorBase.defaultAllocator);
             var handleIndex = 0;
 
-            if (!SchedulePositionsJobs(offset, buffers, posData, posAcc, handles, ref handleIndex))
-                return null;
-
-            if (nrmAcc != null
-                && !ScheduleNormalsJobs(
-                    offset,
-                    buffers,
-                    nrmAcc,
-                    nrmInput,
-                    nrmInputByteStride,
-                    handles,
-                    ref handleIndex))
+            if (!SchedulePositionsJobs(offset, buffers, morphTarget.POSITION, posAcc, logger, handles, ref handleIndex)
+                || (nrmAcc != null
+                    && !ScheduleNormalsJobs(offset, buffers, morphTarget.NORMAL, nrmAcc, logger, handles, ref handleIndex))
+                || (tanAcc != null
+                    && !ScheduleTangentsJobs(offset, buffers, morphTarget.TANGENT, tanAcc, logger, handles, handleIndex)))
             {
-                return null;
-            }
-
-            if (tanAcc != null
-                && !ScheduleTangentsJobs(offset, buffers, tanAcc, tanInput, tanInputByteStride, handles, handleIndex))
-            {
+                VertexBufferGeneratorBase.CompleteAndDispose(handles);
+                Profiler.EndSample();
                 return null;
             }
 
@@ -189,25 +207,54 @@ namespace GLTFast
             return handle;
         }
 
+        static bool TryGetAccessor(
+            IGltfBuffers buffers,
+            int index,
+            int vertexCount,
+            ICodeLogger logger,
+            out AccessorBase accessor
+            )
+        {
+            accessor = buffers.GetAccessor(index);
+            if (accessor == null || accessor.count > vertexCount)
+            {
+                logger?.Error(LogCode.AccessorAccessFailed, index.ToString());
+                return false;
+            }
+            return true;
+        }
+
         unsafe bool SchedulePositionsJobs(
             int offset,
             IGltfBuffers buffers,
-            void* posData,
+            int posAccIndex,
             AccessorBase posAcc,
+            ICodeLogger logger,
             NativeArray<JobHandle> handles,
             ref int handleIndex
             )
         {
+            void* posIndexData = null;
+            void* posValueData = null;
+            if (posAcc.IsSparse
+                && !VertexBufferGeneratorBase.TryGetVector3SparseData(
+                    buffers, posAccIndex, posAcc, logger, out posIndexData, out posValueData))
+            {
+                return false;
+            }
+
             fixed (void* dest = &m_Positions[offset])
             {
                 JobHandle? h = null;
-                if (posData != null)
+                if (posAcc.bufferView >= 0)
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
                         buffers,
+                        posAccIndex,
                         posAcc,
                         (float3*)dest,
                         12,
+                        logger,
                         posAcc.normalized,
                         false // positional data never needs to be normalized
                     );
@@ -218,14 +265,11 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }
                 if (posAcc.IsSparse)
                 {
-                    buffers.GetAccessorSparseIndices(posAcc.Sparse.Indices, out var posIndexData);
-                    buffers.GetAccessorSparseValues(posAcc.Sparse.Values, out var posValueData);
                     var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                         posIndexData,
                         posValueData,
@@ -244,7 +288,6 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }
@@ -256,13 +299,22 @@ namespace GLTFast
         unsafe bool ScheduleNormalsJobs(
             int offset,
             IGltfBuffers buffers,
+            int nrmAccIndex,
             AccessorBase nrmAcc,
-            void* nrmInput,
-            int nrmInputByteStride,
+            ICodeLogger logger,
             NativeArray<JobHandle> handles,
             ref int handleIndex
             )
         {
+            void* indexData = null;
+            void* valueData = null;
+            if (nrmAcc.IsSparse
+                && !VertexBufferGeneratorBase.TryGetVector3SparseData(
+                    buffers, nrmAccIndex, nrmAcc, logger, out indexData, out valueData))
+            {
+                return false;
+            }
+
             fixed (void* dest = &(m_Normals[offset]))
             {
                 JobHandle? h = null;
@@ -270,9 +322,11 @@ namespace GLTFast
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
                         buffers,
+                        nrmAccIndex,
                         nrmAcc,
                         (float3*)dest,
                         12,
+                        logger,
                         nrmAcc.normalized,
                         false // morph target normals are deltas -> don't normalize
                     );
@@ -283,14 +337,11 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }
                 if (nrmAcc.IsSparse)
                 {
-                    buffers.GetAccessorSparseIndices(nrmAcc.Sparse.Indices, out var indexData);
-                    buffers.GetAccessorSparseValues(nrmAcc.Sparse.Values, out var valueData);
                     var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                         indexData,
                         valueData,
@@ -309,7 +360,6 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }
@@ -321,13 +371,22 @@ namespace GLTFast
         unsafe bool ScheduleTangentsJobs(
             int offset,
             IGltfBuffers buffers,
+            int tanAccIndex,
             AccessorBase tanAcc,
-            void* tanInput,
-            int tanInputByteStride,
+            ICodeLogger logger,
             NativeArray<JobHandle> handles,
             int handleIndex
             )
         {
+            void* indexData = null;
+            void* valueData = null;
+            if (tanAcc.IsSparse
+                && !VertexBufferGeneratorBase.TryGetVector3SparseData(
+                    buffers, tanAccIndex, tanAcc, logger, out indexData, out valueData))
+            {
+                return false;
+            }
+
             fixed (void* dest = &(m_Tangents[offset]))
             {
                 JobHandle? h = null;
@@ -335,9 +394,11 @@ namespace GLTFast
                 {
                     h = VertexBufferGeneratorBase.GetVector3Job(
                         buffers,
+                        tanAccIndex,
                         tanAcc,
                         (float3*)dest,
                         12,
+                        logger,
                         tanAcc.normalized,
                         false // morph target tangents are deltas -> don't normalize
                     );
@@ -348,14 +409,11 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }
                 if (tanAcc.IsSparse)
                 {
-                    buffers.GetAccessorSparseIndices(tanAcc.Sparse.Indices, out var indexData);
-                    buffers.GetAccessorSparseValues(tanAcc.Sparse.Values, out var valueData);
                     var sparseJobHandle = VertexBufferGeneratorBase.GetVector3SparseJob(
                         indexData,
                         valueData,
@@ -373,7 +431,6 @@ namespace GLTFast
                     }
                     else
                     {
-                        Profiler.EndSample();
                         return false;
                     }
                 }

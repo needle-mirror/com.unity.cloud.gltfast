@@ -18,6 +18,24 @@ namespace GLTFast
         /// <summary>
         /// Creates an image from the input data.
         /// </summary>
+        /// <remarks>
+        /// <para>
+        /// glTFast governs where this method's <c>await</c> continuations resume, keeping the main thread responsive
+        /// without the loader consulting the <see cref="IDeferAgent"/>. Write plain asynchronous code: decode on a
+        /// worker thread with <c>Task.Run</c> and create the texture after awaiting the result. The method is also
+        /// entered with main-thread time available, so short work needs no yielding at all.
+        /// </para>
+        /// <para>
+        /// Two rules apply. Do not use <c>ConfigureAwait(false)</c>, which escapes to the thread pool where Unity's
+        /// API is unavailable; and never block the main thread on a task with <c>Task.Result</c> or <c>Task.Wait</c>,
+        /// which deadlocks.
+        /// </para>
+        /// <para>
+        /// Split long stretches of synchronous main-thread work with <c>await Task.Yield()</c>; each yield resumes once
+        /// main-thread time is available. Unity's <c>Awaitable</c> and <c>AsyncOperation</c> bypass this: code after
+        /// awaiting one runs ungoverned for the rest of the method, so prefer <c>Task</c>-based APIs.
+        /// </para>
+        /// </remarks>
         /// <param name="data">Raw, compressed image data.</param>
         /// <param name="linear">If true, the texture being created is in linear space. If false, it is in sRGB space.</param>
         /// <param name="readable">If true, the resulting texture should remain readable (<see cref="UnityEngine.Texture2D.isReadable"/>).</param>

@@ -39,7 +39,7 @@ namespace GLTFast.Export
 #endif
                         break;
                     case RenderPipeline.Universal:
-#if UNITY_SHADER_GRAPH
+#if UNITY_SHADER_GRAPH && USING_URP
                         s_MaterialExport = MetaMaterialExportShaderGraphs<
                             LitMaterialExport,
                             GltfShaderGraphMaterialExporter

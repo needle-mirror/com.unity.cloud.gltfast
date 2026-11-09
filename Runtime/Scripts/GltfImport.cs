@@ -407,7 +407,7 @@ namespace GLTFast
             )
         {
             m_Settings = importSettings ?? new ImportSettings();
-            return await LoadFromUri(url, cancellationToken);
+            return await LoadFromUri(UriHelper.GetAbsoluteUri(url), cancellationToken);
         }
 
         /// <summary>
@@ -1192,12 +1192,14 @@ namespace GLTFast
                 return new NativeSlice<byte>();
             }
             var accessor = Root.Accessors[accessorIndex];
-            return ((IGltfBuffers)this).GetBufferView(
+            return ((IGltfBuffers)this).TryGetBufferView(
                 accessor.bufferView,
-                out _,
+                out var accessorData,
                 accessor.byteOffset,
                 accessor.ByteSize
-                ).ToSlice();
+                )
+                ? accessorData.ToSlice()
+                : new NativeSlice<byte>();
         }
 
         /// <summary>
@@ -1711,7 +1713,7 @@ namespace GLTFast
                     cancellationToken.ThrowIfCancellationRequestedWithTracking();
                     Profiler.BeginSample("LoadImages.Prepare");
 
-                    var defaultKey = new SamplerKey(new Sampler());
+                    var defaultKey = new SamplerKey(Sampler.Default, m_Settings.DefaultMinFilterMode, m_Settings.DefaultMagFilterMode);
                     var imageVariants = new Dictionary<SamplerKey, int>[Root.Images.Count];
                     for (var textureIndex = 0; textureIndex < Root.Textures.Count; textureIndex++)
                     {
@@ -1723,7 +1725,7 @@ namespace GLTFast
                         if (txt.sampler >= 0)
                         {
                             var sampler = Root.Samplers[txt.sampler];
-                            key = new SamplerKey(sampler);
+                            key = new SamplerKey(sampler, m_Settings.DefaultMinFilterMode, m_Settings.DefaultMagFilterMode);
                         }
                         else
                         {
@@ -1808,13 +1810,13 @@ namespace GLTFast
                     if (textureImageLoaderMap != null && textureImageLoaderMap.TryGetValue(textureIndex, out var loader))
                     {
                         m_TextureLoadTasks[textureIndex] = ImageImport.LoadImageAsync(
+                                m_Context,
                                 GetImageDataAsync(img, cancellationToken),
                                 forceSampleLinear,
                                 readable,
                                 m_Settings.GenerateMipMaps,
                                 cancellationToken,
-                                loader,
-                                DeferAgent
+                                loader
                             );
                         continue;
                     }
@@ -1836,13 +1838,13 @@ namespace GLTFast
                                     if (defaultLoader.IsAbleToLoad(format))
                                     {
                                         task = ImageImport.LoadImageAsync(
+                                            m_Context,
                                             GetImageDataAsync(img, cancellationToken),
                                             forceSampleLinear,
                                             readable,
                                             m_Settings.GenerateMipMaps,
                                             cancellationToken,
-                                            defaultLoader,
-                                            DeferAgent
+                                            defaultLoader
                                             );
                                         return true;
                                     }
@@ -2069,11 +2071,37 @@ namespace GLTFast
                 {
                     Assert.IsNull(Root);
 
-                    Profiler.BeginSample("GetJSON");
                     var bytesStream = bytes.ToUnmanagedMemoryStream((uint)index, chLength);
                     var reader = new StreamReader(bytesStream);
-                    var json = await reader.ReadToEndAsync();
-                    Profiler.EndSample();
+                    string json = null;
+                    var predictedTime = chLength / (float)k_JsonParseSpeed;
+#if GLTFAST_THREADS && !MEASURE_TIMINGS
+                    if (DeferAgent.ShouldDefer(predictedTime))
+                    {
+                        // ReadToEndAsync completes synchronously on a memory stream
+                        // => decode in a thread.
+                        try
+                        {
+                            json = await Task.Run(() =>
+                            {
+                                Profiler.BeginSample("GetJSON");
+                                var result = reader.ReadToEnd();
+                                Profiler.EndSample();
+                                return result;
+                            }, cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            cancellationToken.ThrowIfCancellationRequestedWithTracking();
+                        }
+                    }
+                    else
+#endif
+                    {
+                        Profiler.BeginSample("GetJSON");
+                        json = await reader.ReadToEndAsync();
+                        Profiler.EndSample();
+                    }
 
                     var success = await ParseJsonAndLoadBuffers(json, cancellationToken);
 
@@ -2112,29 +2140,169 @@ namespace GLTFast
             return m_Buffers[index];
         }
 
-        ReadOnlyNativeArray<byte> IGltfBuffers.GetBufferView(int bufferViewIndex, out int byteStride, int offset, int length)
+        bool IGltfBuffers.TryGetBufferView(int bufferViewIndex, out ReadOnlyNativeArray<byte> data, int offset, int length)
         {
-            var bufferView = Root.BufferViews[bufferViewIndex];
-#if MESHOPT_IS_ENABLED
-            if (bufferView.Extensions?.EXT_meshopt_compression != null)
+            data = default;
+            if (offset < 0 || !TryGetBufferViewData(bufferViewIndex, out var bufferViewData))
             {
-                byteStride = bufferView.Extensions.EXT_meshopt_compression.byteStride;
-                var entireBuffer = m_MeshoptBufferViews[bufferViewIndex];
-                if (offset == 0 && length <= 0)
+                return false;
+            }
+            if (length <= 0)
+            {
+                length = bufferViewData.Length - offset;
+            }
+            if (length < 0 || (long)offset + length > bufferViewData.Length)
+            {
+                return false;
+            }
+            data = offset == 0 && length == bufferViewData.Length
+                ? bufferViewData
+                : bufferViewData.GetSubArray(offset, length);
+            return true;
+        }
+
+        unsafe bool IGltfBuffers.TryGetAccessorData(
+            AccessorBase accessor,
+            int componentCount,
+            out void* data,
+            out int byteStride
+            )
+        {
+            data = null;
+            byteStride = 0;
+            if (accessor == null
+                || componentCount <= 0
+                || accessor.count < 0
+                || !TryGetComponentByteSize(accessor.componentType, out var componentByteSize)
+                || !TryGetBufferViewData(accessor.bufferView, out var bufferViewData))
+            {
+                return false;
+            }
+            var elementByteSize = componentCount * componentByteSize;
+            var bufferViewByteStride = Root.BufferViews[accessor.bufferView].byteStride;
+            byteStride = bufferViewByteStride > 0 ? bufferViewByteStride : elementByteSize;
+            var byteLength = accessor.count == 0
+                ? 0L
+                : (long)(accessor.count - 1) * byteStride + elementByteSize;
+            return TryGetPointer(bufferViewData, accessor.byteOffset, byteLength, out data);
+        }
+
+        unsafe bool IGltfBuffers.TryGetAccessorSparseIndices(AccessorBase accessor, out void* data)
+        {
+            data = null;
+            var sparse = accessor?.Sparse;
+            var indices = sparse?.Indices;
+            if (indices == null
+                || sparse.count < 0
+                || indices.componentType == GltfComponentType.Float
+                || !TryGetComponentByteSize(indices.componentType, out var indexByteSize)
+                || indices.bufferView > int.MaxValue
+                || !TryGetBufferViewData((int)indices.bufferView, out var bufferViewData)
+                || !TryGetPointer(bufferViewData, indices.byteOffset, (long)sparse.count * indexByteSize, out var indexData))
+            {
+                return false;
+            }
+            for (var i = 0; i < sparse.count; i++)
+            {
+                long index = indices.componentType switch
                 {
-                    return new ReadOnlyNativeArray<byte>(entireBuffer);
-                }
-                Assert.IsTrue(offset >= 0);
-                if (length <= 0)
+                    GltfComponentType.UnsignedByte => ((byte*)indexData)[i],
+                    GltfComponentType.Byte => ((sbyte*)indexData)[i],
+                    GltfComponentType.UnsignedShort => ((ushort*)indexData)[i],
+                    GltfComponentType.Short => ((short*)indexData)[i],
+                    _ => ((uint*)indexData)[i]
+                };
+                if (index < 0 || index >= accessor.count)
                 {
-                    length = entireBuffer.Length - offset;
+                    return false;
                 }
-                Assert.IsTrue(offset + length <= entireBuffer.Length);
-                return new ReadOnlyNativeArray<byte>(entireBuffer.GetSubArray(offset, length));
+            }
+            data = indexData;
+            return true;
+        }
+
+        unsafe bool IGltfBuffers.TryGetAccessorSparseValues(AccessorBase accessor, int componentCount, out void* data)
+        {
+            data = null;
+            var sparse = accessor?.Sparse;
+            var values = sparse?.Values;
+            return values != null
+                && sparse.count >= 0
+                && componentCount > 0
+                && TryGetComponentByteSize(accessor.componentType, out var componentByteSize)
+                && values.bufferView <= int.MaxValue
+                && TryGetBufferViewData((int)values.bufferView, out var bufferViewData)
+                && TryGetPointer(
+                    bufferViewData,
+                    values.byteOffset,
+                    (long)sparse.count * componentCount * componentByteSize,
+                    out data);
+        }
+
+        bool TryGetBufferViewData(int bufferViewIndex, out ReadOnlyNativeArray<byte> data)
+        {
+            data = default;
+            if (Root.BufferViews == null || bufferViewIndex < 0 || bufferViewIndex >= Root.BufferViews.Count)
+            {
+                return false;
+            }
+            var bufferView = Root.BufferViews[bufferViewIndex];
+            if (bufferView.byteOffset < 0 || bufferView.byteLength < 0)
+            {
+                return false;
+            }
+#if MESHOPT_IS_ENABLED
+            var meshopt = bufferView.Extensions?.EXT_meshopt_compression;
+            if (meshopt != null)
+            {
+                if (m_MeshoptBufferViews == null
+                    || !m_MeshoptBufferViews.TryGetValue(bufferViewIndex, out var decoded)
+                    || decoded.Length != bufferView.byteLength
+                    || (bufferView.byteStride > 0 && bufferView.byteStride != meshopt.byteStride))
+                {
+                    return false;
+                }
+                data = new ReadOnlyNativeArray<byte>(decoded);
+                return true;
             }
 #endif
-            byteStride = bufferView.byteStride;
-            return GetBufferView(bufferView, offset, length);
+            var bufferIndex = bufferView.buffer;
+            if (m_Buffers == null || bufferIndex < 0 || bufferIndex >= m_Buffers.Length || !m_Buffers[bufferIndex].IsCreated)
+            {
+                return false;
+            }
+            var chunk = m_BinChunks[bufferIndex];
+            var start = (long)chunk.Start + bufferView.byteOffset;
+            if ((long)bufferView.byteOffset + bufferView.byteLength > chunk.Length
+                || start + bufferView.byteLength > m_Buffers[bufferIndex].Length)
+            {
+                return false;
+            }
+            data = m_Buffers[bufferIndex].GetSubArray((int)start, bufferView.byteLength);
+            return true;
+        }
+
+        static unsafe bool TryGetPointer(ReadOnlyNativeArray<byte> data, int byteOffset, long byteLength, out void* pointer)
+        {
+            if (byteOffset < 0 || byteLength < 0 || byteOffset + byteLength > data.Length)
+            {
+                pointer = null;
+                return false;
+            }
+            pointer = (byte*)data.GetUnsafeReadOnlyPtr() + byteOffset;
+            return true;
+        }
+
+        static bool TryGetComponentByteSize(GltfComponentType componentType, out int byteSize)
+        {
+            byteSize = componentType switch
+            {
+                GltfComponentType.Byte or GltfComponentType.UnsignedByte => 1,
+                GltfComponentType.Short or GltfComponentType.UnsignedShort => 2,
+                GltfComponentType.Float or GltfComponentType.UnsignedInt => 4,
+                _ => 0
+            };
+            return byteSize > 0;
         }
 
 
@@ -2153,10 +2321,8 @@ namespace GLTFast
                 {
                     return new ReadOnlyNativeArray<byte>(fullSlice).Reinterpret<T>();
                 }
-                Assert.IsTrue(offset >= 0);
-                Assert.IsTrue(count > 0);
-                Assert.IsTrue(offset + count * UnsafeUtility.SizeOf(typeof(T)) <= fullSlice.Length);
-                return new ReadOnlyNativeArray<byte>(fullSlice).GetSubArray(offset, count).Reinterpret<T>();
+                return new ReadOnlyNativeArray<byte>(fullSlice).GetSubArray(
+                    offset, count * UnsafeUtility.SizeOf(typeof(T))).Reinterpret<T>();
             }
 #endif
             return GetAccessorData<T>(bufferView, count, offset);
@@ -2175,6 +2341,9 @@ namespace GLTFast
                 unsafe
                 {
                     var fullSlice = m_MeshoptBufferViews[bufferViewIndex];
+                    var byteStride = bufferView.ByteStride > 0
+                        ? bufferView.ByteStride
+                        : UnsafeUtility.SizeOf(typeof(T));
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                     var safety = NativeArrayUnsafeUtility.GetAtomicSafetyHandle(fullSlice);
 #endif
@@ -2183,7 +2352,7 @@ namespace GLTFast
                         fullSlice.Length,
                         offset,
                         count,
-                        bufferView.byteStride
+                        byteStride
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
                         , ref safety
 #endif
@@ -2358,61 +2527,73 @@ namespace GLTFast
             if (!success) return false;
 #endif
 
-            if (Root.Accessors != null)
+            try
             {
-                success = await LoadAccessorData(cancellationToken);
-                await DeferAgent.BreakPoint();
-
-                while (!m_AccessorJobsHandle.IsCompleted)
+                if (Root.Accessors != null)
                 {
-                    await Task.Yield();
-                }
-                m_AccessorJobsHandle.Complete();
-            }
-            if (!success) return success;
+                    success = await LoadAccessorData(cancellationToken);
+                    await DeferAgent.BreakPoint();
 
-            if (m_TextureLoadTasks != null)
-            {
-                m_Textures = new Texture2D[Root.Textures.Count];
-                foreach (var textureLoadTask in m_TextureLoadTasks)
-                {
-                    var result = await textureLoadTask.Value;
-                    if (result.Texture is not null)
+                    while (!m_AccessorJobsHandle.IsCompleted)
                     {
-                        if (!result.IsYFlipped)
-                        {
-                            m_NonFlippedYTextureIndices ??= new HashSet<int>(m_TextureLoadTasks.Count);
-                            m_NonFlippedYTextureIndices.Add(textureLoadTask.Key);
-                        }
+                        await Task.Yield();
+                    }
+                    m_AccessorJobsHandle.Complete();
+                }
+                if (!success) return success;
 
-                        var textureIndex = textureLoadTask.Key;
-                        result.Texture.name = GetTextureName(textureIndex);
-                        result.Texture.anisoLevel = m_Settings.AnisotropicFilterLevel;
-                        m_Textures[textureIndex] = result.Texture;
-                        m_Resources.Add(result.Texture);
+                if (m_TextureLoadTasks != null)
+                {
+                    m_Textures = new Texture2D[Root.Textures.Count];
+                    foreach (var textureLoadTask in m_TextureLoadTasks)
+                    {
+                        var result = await textureLoadTask.Value;
+                        if (result.Texture is not null)
+                        {
+                            if (!result.IsYFlipped)
+                            {
+                                m_NonFlippedYTextureIndices ??= new HashSet<int>(m_TextureLoadTasks.Count);
+                                m_NonFlippedYTextureIndices.Add(textureLoadTask.Key);
+                            }
+
+                            var textureIndex = textureLoadTask.Key;
+                            result.Texture.name = GetTextureName(textureIndex);
+                            result.Texture.anisoLevel = m_Settings.AnisotropicFilterLevel;
+                            var samplerIndex = Root.Textures[textureIndex].sampler;
+                            var sampler = Root.Samplers != null && samplerIndex >= 0 && samplerIndex < Root.Samplers.Count
+                                ? Root.Samplers[samplerIndex]
+                                : Sampler.Default;
+                            sampler.Apply(result.Texture, m_Settings.DefaultMinFilterMode, m_Settings.DefaultMagFilterMode);
+                            m_Textures[textureIndex] = result.Texture;
+                            m_Resources.Add(result.Texture);
+                        }
                     }
                 }
-            }
 
-            if (Root.Textures != null)
-            {
-                PopulateTextureVariants(cancellationToken);
-            }
+                if (Root.Textures != null)
+                {
+                    PopulateTextureVariants(cancellationToken);
+                }
 
-            if (Root.Materials != null)
-            {
-                await GenerateMaterials(cancellationToken);
-            }
-            await DeferAgent.BreakPoint();
-
-            if (m_MeshOrders != null)
-            {
-                await WaitForAllMeshGenerators(cancellationToken);
+                if (Root.Materials != null)
+                {
+                    await GenerateMaterials(cancellationToken);
+                }
                 await DeferAgent.BreakPoint();
 
-                await AssignAllAccessorData(cancellationToken);
+                if (m_MeshOrders != null)
+                {
+                    await WaitForAllMeshGenerators(cancellationToken);
+                    await DeferAgent.BreakPoint();
 
-                success = await CreateAllMeshAssignments(cancellationToken);
+                    await AssignAllAccessorData(cancellationToken);
+
+                    success = await CreateAllMeshAssignments(cancellationToken);
+                }
+            }
+            finally
+            {
+                await DisposeMeshOrders();
             }
 
 #if UNITY_ANIMATION || GLTFAST_ANIMATION
@@ -2691,8 +2872,24 @@ namespace GLTFast
                 await DeferAgent.BreakPoint();
             }
 
-            m_MeshOrders = null;
             return true;
+        }
+
+        async Task DisposeMeshOrders()
+        {
+            if (m_MeshOrders == null)
+            {
+                return;
+            }
+
+            await WaitForAllMeshGenerators(CancellationToken.None);
+
+            foreach (var meshOrder in m_MeshOrders)
+            {
+                meshOrder.Dispose();
+            }
+
+            m_MeshOrders = null;
         }
 
         async Task WaitForAllMeshGenerators(CancellationToken cancellationToken)
@@ -2755,7 +2952,7 @@ namespace GLTFast
                             sampler = Root.Samplers[txt.sampler];
                         }
 
-                        sampler ??= new Sampler();
+                        sampler ??= Sampler.Default;
 
                         var texture = UnityEngine.Object.Instantiate(originalTexture);
 #if DEBUG
@@ -3549,6 +3746,15 @@ namespace GLTFast
                     {
                         // TODO: Maybe use Matrix4x4[], since Mesh.bindposes only accepts C# arrays.
                         GetMatricesJob(i, out var matrices, out var jh);
+                        if (!jh.HasValue)
+                        {
+                            if (matrices.IsCreated)
+                            {
+                                matrices.Dispose();
+                            }
+                            success = false;
+                            break;
+                        }
                         tmpList.Add(jh.Value);
                         m_AccessorData[i] = matrices;
                         break;
@@ -3563,6 +3769,15 @@ namespace GLTFast
                     case GltfAccessorAttributeType.VEC4 when (m_AccessorUsage[i] & AccessorUsage.Rotation) != 0:
                     {
                         GetVector4Job(i, out var data, out var jh);
+                        if (!jh.HasValue)
+                        {
+                            if (data.IsCreated)
+                            {
+                                data.Dispose();
+                            }
+                            success = false;
+                            break;
+                        }
                         tmpList.Add(jh.Value);
                         m_AccessorData[i] = data;
                         break;
@@ -3735,12 +3950,19 @@ namespace GLTFast
             Profiler.BeginSample("GetMatricesJob");
             // index
             var accessor = Root.Accessors[accessorIndex];
-            var accessorData = ((IGltfBuffers)this).GetBufferView(
-                accessor.bufferView,
-                out _,
-                accessor.byteOffset,
-                accessor.ByteSize
-                );
+            if (!((IGltfBuffers)this).TryGetBufferView(
+                    accessor.bufferView,
+                    out var accessorData,
+                    accessor.byteOffset,
+                    accessor.ByteSize
+                    ))
+            {
+                Logger?.Error(LogCode.AccessorAccessFailed, accessorIndex.ToString());
+                matrices = default;
+                jobHandle = null;
+                Profiler.EndSample();
+                return;
+            }
 
             Profiler.BeginSample("Alloc");
             matrices = new NativeArray<float4x4>(accessor.count, Allocator.Persistent);
@@ -3838,12 +4060,19 @@ namespace GLTFast
             Profiler.BeginSample("GetVector4Job");
             // index
             var accessor = Root.Accessors[accessorIndex];
-            var accessorData = ((IGltfBuffers)this).GetBufferView(
-                accessor.bufferView,
-                out _,
-                accessor.byteOffset,
-                accessor.ByteSize
-                );
+            if (!((IGltfBuffers)this).TryGetBufferView(
+                    accessor.bufferView,
+                    out var accessorData,
+                    accessor.byteOffset,
+                    accessor.ByteSize
+                    ))
+            {
+                Logger?.Error(LogCode.AccessorAccessFailed, accessorIndex.ToString());
+                vectors = default;
+                jobHandle = null;
+                Profiler.EndSample();
+                return;
+            }
 
             Profiler.BeginSample("Alloc");
             vectors = new NativeArray<quaternion>(accessor.count, Allocator.Persistent);
@@ -3904,12 +4133,17 @@ namespace GLTFast
             scalars = null;
             jobHandle = null;
             var accessor = Root.Accessors[accessorIndex];
-            var accessorData = ((IGltfBuffers)this).GetBufferView(
-                accessor.bufferView,
-                out _,
-                accessor.byteOffset,
-                accessor.ByteSize
-                );
+            if (!((IGltfBuffers)this).TryGetBufferView(
+                    accessor.bufferView,
+                    out var accessorData,
+                    accessor.byteOffset,
+                    accessor.ByteSize
+                    ))
+            {
+                Logger?.Error(LogCode.AccessorAccessFailed, accessorIndex.ToString());
+                Profiler.EndSample();
+                return;
+            }
 
             Assert.AreEqual(accessor.GetAttributeType(), GltfAccessorAttributeType.SCALAR);
             if (accessor.IsSparse)
@@ -4004,45 +4238,6 @@ namespace GLTFast
             return index < 0 || Root.Accessors == null || index >= Root.Accessors.Count
                 ? null
                 : Root.Accessors[index];
-        }
-
-        /// <summary>
-        /// Get glTF accessor and its raw data
-        /// </summary>
-        /// <param name="index">glTF accessor index</param>
-        /// <param name="accessor">De-serialized glTF accessor</param>
-        /// <param name="data">Pointer to accessor's data in memory</param>
-        /// <param name="byteStride">Element byte stride</param>
-        unsafe void IGltfBuffers.GetAccessorAndData(int index, out AccessorBase accessor, out void* data, out int byteStride)
-        {
-            accessor = Root.Accessors[index];
-            if (accessor.bufferView < 0 || accessor.bufferView >= Root.BufferViews.Count)
-            {
-                data = null;
-                byteStride = 0;
-                return;
-            }
-            var bufferView = Root.BufferViews[accessor.bufferView];
-#if MESHOPT_IS_ENABLED
-            var meshopt = bufferView.Extensions?.EXT_meshopt_compression;
-            if (meshopt != null)
-            {
-                byteStride = meshopt.byteStride;
-                data = (byte*)m_MeshoptBufferViews[accessor.bufferView].GetUnsafeReadOnlyPtr() + accessor.byteOffset;
-            }
-            else
-#endif
-            {
-                byteStride = bufferView.byteStride;
-                var bufferIndex = bufferView.buffer;
-                var buffer = GetBuffer(bufferIndex);
-                data = (byte*)buffer.GetUnsafeReadOnlyPtr()
-                    + (accessor.byteOffset + bufferView.byteOffset + m_BinChunks[bufferIndex].Start);
-            }
-
-            // // Alternative that uses NativeArray/Slice
-            // var bufferViewData = GetBufferView(bufferView);
-            // data =  (byte*)bufferViewData.GetUnsafeReadOnlyPtr() + accessor.byteOffset;
         }
 
         /// <summary>

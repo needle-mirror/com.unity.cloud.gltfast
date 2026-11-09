@@ -12,6 +12,7 @@ namespace GLTFast.Schema
     [Serializable]
     public class Sampler : NamedObject
     {
+        internal static readonly Sampler Default = new();
 
         /// <summary>
         /// Magnification filter mode.
@@ -199,8 +200,12 @@ namespace GLTFast.Schema
             image.wrapModeU = WrapU;
             image.wrapModeV = WrapV;
 
-            // Use the default filtering mode for textures that have no such specification in data
-            image.filterMode = ConvertFilterMode(
+            image.filterMode = GetFilterMode(defaultMinFilter, defaultMagFilter);
+        }
+
+        internal FilterMode GetFilterMode(MinFilterMode defaultMinFilter, MagFilterMode defaultMagFilter)
+        {
+            return ConvertFilterMode(
                 minFilter == MinFilterMode.None ? defaultMinFilter : minFilter,
                 magFilter == MagFilterMode.None ? defaultMagFilter : magFilter
             );

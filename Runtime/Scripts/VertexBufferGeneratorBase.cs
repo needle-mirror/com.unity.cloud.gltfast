@@ -64,21 +64,31 @@ namespace GLTFast
         /// Schedules a job that converts input data into float3 arrays.
         /// </summary>
         /// <param name="buffers">Buffer provider</param>
+        /// <param name="accessorIndex">glTF accessor index</param>
         /// <param name="accessor">glTF accessor</param>
         /// <param name="output">Points at the destination buffer in memory</param>
         /// <param name="outputByteStride">Output byte stride</param>
+        /// <param name="logger">Logger</param>
         /// <param name="normalized">If true, integer values have to be normalized</param>
         /// <param name="ensureUnitLength">If true, normalized values will be scaled to have unit length again (only if <see cref="normalized"/>is true)</param>
         /// <returns></returns>
         public static unsafe JobHandle? GetVector3Job(
             IGltfBuffers buffers,
+            int accessorIndex,
             AccessorBase accessor,
             float3* output,
             int outputByteStride,
+            ICodeLogger logger,
             bool normalized = false,
             bool ensureUnitLength = true
         )
         {
+            if (!buffers.TryGetAccessorData(accessor, 3, out _, out _))
+            {
+                logger?.Error(LogCode.AccessorAccessFailed, accessorIndex.ToString());
+                return null;
+            }
+
             JobHandle? jobHandle;
 
             Profiler.BeginSample("GetVector3Job");
@@ -307,6 +317,34 @@ namespace GLTFast
 
             Profiler.EndSample();
             return jobHandle;
+        }
+
+        public static void CompleteAndDispose(NativeArray<JobHandle> handles)
+        {
+            foreach (var handle in handles)
+            {
+                handle.Complete();
+            }
+            handles.Dispose();
+        }
+
+        public static unsafe bool TryGetVector3SparseData(
+            IGltfBuffers buffers,
+            int accessorIndex,
+            AccessorBase accessor,
+            ICodeLogger logger,
+            out void* indexData,
+            out void* valueData
+        )
+        {
+            valueData = null;
+            if (buffers.TryGetAccessorSparseIndices(accessor, out indexData)
+                && buffers.TryGetAccessorSparseValues(accessor, 3, out valueData))
+            {
+                return true;
+            }
+            logger?.Error(LogCode.AccessorAccessFailed, accessorIndex.ToString());
+            return false;
         }
 
         public static unsafe JobHandle? GetVector3SparseJob(

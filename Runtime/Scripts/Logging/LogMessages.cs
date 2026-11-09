@@ -269,6 +269,8 @@ namespace GLTFast.Logging
         AccessorAccessFailed,
         /// <summary>Could not create <see cref="Animation"/> component.</summary>
         AnimationComponentFail,
+        /// <summary>Skin was skipped on export, because one of its bones is not part of the export.</summary>
+        SkinJointNotFound,
     }
 
     /// <summary>
@@ -332,6 +334,7 @@ is approximated. Enable Opaque Texture access in Universal Render Pipeline!" },
             { LogCode.RemapUnsupported, "{0} remap is not fully supported" },
             { LogCode.ShaderMissing, $"Shader \"{{0}}\" is missing. Make sure to include it in the build (see {GltfGlobals.GltfPackageName}/Documentation~/ProjectSetup.md#materials-and-shader-variants )" },
             { LogCode.SkinMissing, "Skin missing" },
+            { LogCode.SkinJointNotFound, "Skip skin on {0}: No node ID for bone transform {1} found!" },
             { LogCode.SparseAccessor, "Sparse Accessor not supported ({0})" },
             { LogCode.StreamError, "Stream error: {0}." },
             { LogCode.TextureDownloadFailed, "Download texture {1} failed: {0}" },

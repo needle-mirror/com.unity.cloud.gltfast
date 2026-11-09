@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using System;
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-using System.Collections.Generic;
-#endif
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -22,53 +19,51 @@ namespace GLTFast
     {
         readonly ICodeLogger m_Logger;
 
-        NativeArray<float4> m_Data;
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-        List<AtomicSafetyHandle> m_SafetyHandles;
-#endif
+        NativeArray<byte> m_Data;
 
-        public VertexBufferColors(int vertexCount, ICodeLogger logger)
+        public VertexBufferColors(int vertexCount, int byteStride, ICodeLogger logger)
         {
             m_Logger = logger;
+            ByteStride = byteStride;
             Profiler.BeginSample("VertexBufferColors.Allocate");
-            m_Data = new NativeArray<float4>(vertexCount, VertexBufferGeneratorBase.defaultAllocator);
+            m_Data = new NativeArray<byte>(vertexCount * byteStride, VertexBufferGeneratorBase.defaultAllocator);
             Profiler.EndSample();
         }
+
+        public int ByteStride { get; }
+
+        public NativeArray<byte> Data => m_Data;
 
         public unsafe bool ScheduleVertexColorJob(
             int colorAccessorIndex,
             int offset,
+            int vertexCount,
             NativeArray<JobHandle> handles,
             IGltfBuffers buffers
             )
         {
             Profiler.BeginSample("VertexBufferColors.Schedule");
-            buffers.GetAccessorAndData(colorAccessorIndex, out var colorAcc, out var data, out var byteStride);
+            var colorAcc = buffers.GetAccessor(colorAccessorIndex);
+            var componentCount = colorAcc?.GetAttributeType() == GltfAccessorAttributeType.VEC3 ? 3 : 4;
+            if (!buffers.TryGetAccessorData(colorAcc, componentCount, out var data, out var byteStride)
+                || colorAcc.count > vertexCount)
+            {
+                m_Logger?.Error(LogCode.AccessorAccessFailed, colorAccessorIndex.ToString());
+                Profiler.EndSample();
+                return false;
+            }
             if (colorAcc.IsSparse)
             {
                 m_Logger?.Error(LogCode.SparseAccessor, "color");
             }
-
-            var colorDestination = m_Data.GetSubArray(offset, colorAcc.count);
-
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (offset > 0)
-            {
-                // On multi-primitive meshes color jobs may only write into the same destination if we set dedicated
-                // safety handles for each sub-array following the first one (offset==0).
-                var safetyHandle = AtomicSafetyHandle.Create();
-                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref colorDestination, safetyHandle);
-                m_SafetyHandles ??= new List<AtomicSafetyHandle>();
-                m_SafetyHandles.Add(safetyHandle);
-            }
-#endif
 
             var h = GetColors32Job(
                 data,
                 colorAcc.componentType,
                 colorAcc.GetAttributeType(),
                 byteStride,
-                colorDestination
+                (float4*)((byte*)m_Data.GetUnsafePtr() + offset * ByteStride),
+                colorAcc.count
             );
             if (h.HasValue)
             {
@@ -101,17 +96,6 @@ namespace GLTFast
 
         public void Dispose()
         {
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            if (m_SafetyHandles != null)
-            {
-                foreach (var handle in m_SafetyHandles)
-                {
-                    AtomicSafetyHandle.CheckDeallocateAndThrow(handle);
-                    AtomicSafetyHandle.Release(handle);
-                }
-                m_SafetyHandles = null;
-            }
-#endif
             if (m_Data.IsCreated)
             {
                 m_Data.Dispose();
@@ -123,7 +107,8 @@ namespace GLTFast
             GltfComponentType inputType,
             GltfAccessorAttributeType attributeType,
             int inputByteStride,
-            NativeArray<float4> output
+            float4* output,
+            int count
             )
         {
             Profiler.BeginSample("PrepareColors32");
@@ -138,10 +123,11 @@ namespace GLTFast
                         var job = new Jobs.ConvertColorsRgbUInt8ToRGBAFloatJob
                         {
                             input = (byte*)input,
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 3,
+                            inputByteStride = inputByteStride,
+                            outputByteStride = ByteStride,
                             result = output
                         };
-                        jobHandle = job.Schedule(output.Length, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
                     }
                     break;
                     case GltfComponentType.Float:
@@ -149,10 +135,11 @@ namespace GLTFast
                         var job = new Jobs.ConvertColorsRGBFloatToRGBAFloatJob
                         {
                             input = (byte*)input,
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 12,
+                            inputByteStride = inputByteStride,
+                            outputByteStride = ByteStride,
                             result = output
                         };
-                        jobHandle = job.Schedule(output.Length, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
                     }
                     break;
                     case GltfComponentType.UnsignedShort:
@@ -160,10 +147,11 @@ namespace GLTFast
                         var job = new Jobs.ConvertColorsRgbUInt16ToRGBAFloatJob
                         {
                             input = (ushort*)input,
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 6,
+                            inputByteStride = inputByteStride,
+                            outputByteStride = ByteStride,
                             result = output
                         };
-                        jobHandle = job.Schedule(output.Length, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
                     }
                     break;
                     default:
@@ -180,21 +168,22 @@ namespace GLTFast
                         var job = new Jobs.ConvertColorsRgbaUInt8ToRGBAFloatJob
                         {
                             input = (byte*)input,
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 4,
+                            inputByteStride = inputByteStride,
+                            outputByteStride = ByteStride,
                             result = output
                         };
-                        jobHandle = job.Schedule(output.Length, GltfImport.DefaultBatchCount);
+                        jobHandle = job.Schedule(count, GltfImport.DefaultBatchCount);
                     }
                     break;
                     case GltfComponentType.Float:
                     {
-                        if (inputByteStride == 16 || inputByteStride <= 0)
+                        if (inputByteStride == 16 && ByteStride == 16)
                         {
                             var job = new Jobs.MemCopyJob
                             {
-                                bufferSize = output.Length * 16,
+                                bufferSize = count * 16,
                                 input = input,
-                                result = output.GetUnsafeReadOnlyPtr()
+                                result = output
                             };
                             jobHandle = job.Schedule();
                         }
@@ -204,9 +193,10 @@ namespace GLTFast
                             {
                                 input = (byte*)input,
                                 inputByteStride = inputByteStride,
+                                outputByteStride = ByteStride,
                                 result = output
                             };
-                            jobHandle = job.ScheduleBatch(output.Length, GltfImport.DefaultBatchCount);
+                            jobHandle = job.ScheduleBatch(count, GltfImport.DefaultBatchCount);
                         }
                     }
                     break;
@@ -215,10 +205,11 @@ namespace GLTFast
                         var job = new Jobs.ConvertColorsRgbaUInt16ToRGBAFloatJob
                         {
                             input = (ushort*)input,
-                            inputByteStride = inputByteStride > 0 ? inputByteStride : 8,
+                            inputByteStride = inputByteStride,
+                            outputByteStride = ByteStride,
                             result = output
                         };
-                        jobHandle = job.ScheduleBatch(output.Length, GltfImport.DefaultBatchCount);
+                        jobHandle = job.ScheduleBatch(count, GltfImport.DefaultBatchCount);
                     }
                     break;
                     default:
